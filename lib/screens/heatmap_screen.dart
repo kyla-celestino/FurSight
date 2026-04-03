@@ -13,15 +13,16 @@ class HeatmapScreen extends StatefulWidget {
 class _HeatmapScreenState extends State<HeatmapScreen> {
   final _firebaseService = FirebaseService();
   late WebViewController _webController;
-  String _filter    = 'all';
-  bool   _isLoading = true;
+  String _filter        = 'all';
+  bool   _isLoading     = true;
+  bool   _mapInitialized = false;
+  List<AnimalSighting> _lastSightings = [];
 
-  static const double UPLB_LAT = 14.1650;
-  static const double UPLB_LNG = 121.2422;
-
-  // ── REPLACE THIS WITH YOUR ACTUAL GOOGLE MAPS API KEY ─────
-  static const String MAPS_API_KEY = 'AIzaSyA3MTYwfOx31ITPSK3DcZQweK9KZMVR2dY';
-  // ──────────────────────────────────────────────────────────
+  static const double uplbLat = 14.1650;
+  static const double uplbLng = 121.2422;
+  // ── REPLACE WITH YOUR KEY ────────────────────────────────
+  static const String mapsApiKey = 'AIzaSyA3MTYwfOx31ITPSK3DcZQweK9KZMVR2dY';
+  // ────────────────────────────────────────────────────────
 
   @override
   void initState() {
@@ -32,9 +33,15 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
   void _initWebView() {
     _webController = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(Colors.white)
       ..setNavigationDelegate(
         NavigationDelegate(
-          onPageFinished: (_) => setState(() => _isLoading = false),
+          onPageFinished: (_) {
+            if (mounted) setState(() => _isLoading = false);
+          },
+          onWebResourceError: (error) {
+            print('WebView error: ${error.description}');
+          },
         ),
       )
       ..loadHtmlString(_buildHeatmapHtml([]));
@@ -42,28 +49,39 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
 
   String _buildHeatmapHtml(List<AnimalSighting> sightings) {
     final points = sightings
-        .map((s) => '{"lat": ${s.latitude}, "lng": ${s.longitude}}')
+        .map((s) => '{lat: ${s.latitude}, lng: ${s.longitude}}')
         .join(',');
 
     return '''
 <!DOCTYPE html>
 <html>
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="initial-scale=1.0">
+  <meta charset="utf-8">
   <style>
-    body { margin: 0; padding: 0; }
-    #map { width: 100vw; height: 100vh; }
+    html, body { 
+      height: 100%; 
+      margin: 0; 
+      padding: 0;
+    }
+    #map { 
+      height: 100%; 
+      width: 100%;
+    }
   </style>
 </head>
 <body>
   <div id="map"></div>
   <script>
+    let map;
+    let heatmap;
+
     function initMap() {
-      const uplb = { lat: $UPLB_LAT, lng: $UPLB_LNG };
-      const map = new google.maps.Map(document.getElementById("map"), {
+      map = new google.maps.Map(document.getElementById("map"), {
         zoom: 16,
-        center: uplb,
+        center: { lat: $uplbLat, lng: $uplbLng },
         mapTypeId: "roadmap",
+        disableDefaultUI: false,
       });
 
       const heatmapData = [$points];
@@ -71,11 +89,11 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
         p => new google.maps.LatLng(p.lat, p.lng)
       );
 
-      new google.maps.visualization.HeatmapLayer({
+      heatmap = new google.maps.visualization.HeatmapLayer({
         data: latLngPoints,
         map: map,
-        radius: 30,
-        opacity: 0.7,
+        radius: 40,
+        opacity: 0.8,
       });
 
       heatmapData.forEach(p => {
@@ -84,26 +102,27 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
           map: map,
           icon: {
             path: google.maps.SymbolPath.CIRCLE,
-            scale: 6,
+            scale: 8,
             fillColor: "#4CAF50",
-            fillOpacity: 0.8,
+            fillOpacity: 0.9,
             strokeColor: "white",
-            strokeWeight: 1,
+            strokeWeight: 2,
           }
         });
       });
     }
+
+    window.onerror = function(msg, url, line) {
+      console.log("Error: " + msg);
+    };
   </script>
-  <script async
-    src="https://maps.googleapis.com/maps/api/js?key=$MAPS_API_KEY&libraries=visualization&callback=initMap">
+  <script
+    src="https://maps.googleapis.com/maps/api/js?key=$mapsApiKey&libraries=visualization&callback=initMap"
+    async defer>
   </script>
 </body>
 </html>
 ''';
-  }
-
-  void _updateMap(List<AnimalSighting> sightings) {
-    _webController.loadHtmlString(_buildHeatmapHtml(sightings));
   }
 
   @override
@@ -117,35 +136,34 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
             child: DropdownButton<String>(
               value: _filter,
               dropdownColor: const Color(0xFF4CAF50),
-              style: const TextStyle(color: Colors.white),
               underline: const SizedBox(),
               icon: const Icon(Icons.filter_list, color: Colors.white),
               items: const [
                 DropdownMenuItem(
                   value: 'all',
-                  child: Text(
-                    'All',
-                    style: TextStyle(color: Colors.white),
-                  ),
+                  child: Text('All',
+                    style: TextStyle(color: Colors.white)),
                 ),
                 DropdownMenuItem(
                   value: 'cat',
-                  child: Text(
-                    'Cats',
-                    style: TextStyle(color: Colors.white),
-                  ),
+                  child: Text('Cats',
+                    style: TextStyle(color: Colors.white)),
                 ),
                 DropdownMenuItem(
                   value: 'dog',
-                  child: Text(
-                    'Dogs',
-                    style: TextStyle(color: Colors.white),
-                  ),
+                  child: Text('Dogs',
+                    style: TextStyle(color: Colors.white)),
                 ),
               ],
               onChanged: (val) {
                 if (val == null) return;
-                setState(() => _filter = val);
+                setState(() {
+                  _filter = val;
+                  _isLoading = true;
+                  _webController.loadHtmlString(
+                    _buildHeatmapHtml(_lastSightings),
+                  );
+                });
               },
             ),
           ),
@@ -156,19 +174,37 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
           animalType: _filter == 'all' ? null : _filter,
         ),
         builder: (context, snapshot) {
-          final sightings = snapshot.data ?? [];
-
           if (snapshot.hasData) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _updateMap(sightings);
-            });
+            final sightings = snapshot.data!;
+            // Only reload map if data actually changed
+            if (sightings.length != _lastSightings.length) {
+              _lastSightings = sightings;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  _webController.loadHtmlString(
+                    _buildHeatmapHtml(sightings),
+                  );
+                }
+              });
+            }
           }
 
           return Stack(
             children: [
               WebViewWidget(controller: _webController),
               if (_isLoading)
-                const Center(child: CircularProgressIndicator()),
+                const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(
+                        color: Color(0xFF4CAF50),
+                      ),
+                      SizedBox(height: 16),
+                      Text('Loading map...'),
+                    ],
+                  ),
+                ),
               Positioned(
                 bottom: 16,
                 left: 16,
@@ -191,7 +227,7 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '${sightings.length} sightings',
+                          '${_lastSightings.length} sightings',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                           ),
