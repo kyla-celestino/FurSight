@@ -1,0 +1,56 @@
+name: furfinder
+description: A community-driven app for geotagged sighting and AI-based identification of campus cats and dogs.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI
+  cupertino_icons: ^1.0.6
+  google_fonts: ^6.1.0
+
+  # Camera and image picking
+  image_picker: ^1.0.7
+  camera: ^0.10.5+9
+
+  # Location
+  geolocator: ^11.0.0
+  geocoding: ^3.0.0
+
+  # Firebase
+  firebase_core: ^2.27.1
+  firebase_auth: ^4.17.9
+  cloud_firestore: ^4.15.9
+  firebase_storage: ^11.6.10
+
+  # Google Maps + Heatmap
+  google_maps_flutter: ^2.5.3
+  webview_flutter: ^4.7.0
+
+  # TFLite AI models
+  tflite_flutter: ^0.10.4
+  image: ^4.1.7
+
+  # Utilities
+  path_provider: ^2.1.2
+  uuid: ^4.3.3
+  intl: ^0.19.0
+  permission_handler: ^11.3.0
+  cached_network_image: ^3.3.1
+  flutter_spinkit: ^5.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/models/
+    - assets/images/
