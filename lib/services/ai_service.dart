@@ -85,7 +85,7 @@ class AIService {
     List<List<double>> output,
     img.Image originalImage,
   ) {
-    double bestConf = 0.3;
+    double bestConf = 0.15;
     int bestIdx = -1;
     int bestClass = -1;
 
