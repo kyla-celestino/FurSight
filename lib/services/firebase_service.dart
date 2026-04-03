@@ -143,15 +143,18 @@ class FirebaseService {
   }
 
   Stream<List<AnimalSighting>> getUserSightings(String userId) {
-    return _sightings
-        .where('submittedBy', isEqualTo: userId)
-        .orderBy('timestamp', descending: true)
-        .snapshots()
-        .map((snap) =>
-          snap.docs
-            .map((doc) => AnimalSighting.fromFirestore(doc))
-            .toList(),
-        );
+  return _sightings
+    .where('submittedBy', isEqualTo: userId)
+    .orderBy('timestamp', descending: true)
+    .snapshots()
+    .handleError((error) {
+      print('Firestore error: $error');
+    })
+    .map((snap) =>
+      snap.docs
+        .map((doc) => AnimalSighting.fromFirestore(doc))
+        .toList(),
+    );
   }
 
   Future<AnimalIndividual?> getIndividual(String id) async {
