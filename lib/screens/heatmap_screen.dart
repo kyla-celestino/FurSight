@@ -81,33 +81,28 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
         zoom: 16,
         center: { lat: $uplbLat, lng: $uplbLng },
         mapTypeId: "roadmap",
-        disableDefaultUI: false,
       });
 
       const heatmapData = [$points];
-      const latLngPoints = heatmapData.map(
-        p => new google.maps.LatLng(p.lat, p.lng)
-      );
 
-      heatmap = new google.maps.visualization.HeatmapLayer({
-        data: latLngPoints,
-        map: map,
-        radius: 40,
-        opacity: 0.8,
-      });
-
+      // Use circles instead of deprecated HeatmapLayer
       heatmapData.forEach(p => {
-        new google.maps.Marker({
+        // Large semi-transparent circle for heat effect
+        new google.maps.Circle({
+          strokeColor: "#FF5722",
+          strokeOpacity: 0.3,
+          strokeWeight: 1,
+          fillColor: "#FF5722",
+          fillOpacity: 0.25,
+          map: map,
+          center: { lat: p.lat, lng: p.lng },
+          radius: 30,
+        });
+
+        // Small solid marker on top
+        new google.maps.marker.AdvancedMarkerElement({
           position: { lat: p.lat, lng: p.lng },
           map: map,
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 8,
-            fillColor: "#4CAF50",
-            fillOpacity: 0.9,
-            strokeColor: "white",
-            strokeWeight: 2,
-          }
         });
       });
     }
@@ -117,7 +112,7 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
     };
   </script>
   <script
-    src="https://maps.googleapis.com/maps/api/js?key=$mapsApiKey&libraries=visualization&callback=initMap"
+    src="https://maps.googleapis.com/maps/api/js?key=$mapsApiKey&libraries=marker&callback=initMap&v=beta"
     async defer>
   </script>
 </body>
