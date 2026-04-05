@@ -13,6 +13,7 @@ import 'logs_screen.dart';
 import 'hotlines_screen.dart';
 import 'how_it_works_screen.dart';
 import 'search_screen.dart';
+import 'community_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -259,7 +260,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               fontWeight: FontWeight.bold, fontSize: 16),
                           ),
                           Text(
-                            '${matches.length} match${matches.length == 1 ? '' : 'es'} · ${animalType}',
+                            '${matches.length} match${matches.length == 1 ? '' : 'es'} found',
                             style: TextStyle(
                               color: Colors.grey[600], fontSize: 13),
                           ),
@@ -327,7 +328,6 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _EmergencyBanner(),
             const SizedBox(height: 16),
 
             // Welcome
@@ -355,7 +355,6 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  // Text search bar
                   Expanded(
                     child: GestureDetector(
                       onTap: () => Navigator.push(
@@ -393,8 +392,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-
-                  // Image search icon button
                   GestureDetector(
                     onTap: _startImageSearch,
                     child: Container(
@@ -423,7 +420,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Quick Access
+            // Quick Access label
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
               child: Text('Quick Access',
@@ -432,6 +429,28 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 12),
 
+            // ── Community Sightings list tile ─────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+                child: ListTile(
+                  leading: const Icon(Icons.people_outline,
+                    color: Color(0xFF9C27B0)),
+                  title: const Text('Community Sightings',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('See all sightings from everyone'),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () => Navigator.push(context,
+                    MaterialPageRoute(
+                      builder: (_) => const CommunityScreen())),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // ── Top 2 cards (Spot + Heatmap) ──────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: GridView.count(
@@ -477,9 +496,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
 
-            // How it works
+            // ── How it works ──────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Card(
