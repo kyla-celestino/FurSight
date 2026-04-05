@@ -110,7 +110,6 @@ class FirebaseService {
           );
         }
 
-        // ── Build update map ───────────────────────────────────
         final updateData = <String, dynamic>{
           'avgEmbedding': updatedEmbedding,
           'sightingCount': FieldValue.increment(1),
@@ -118,18 +117,15 @@ class FirebaseService {
           'latestImageUrl': imageUrl,
         };
 
-        // Only update nickname if user provided a non-empty one
         if (nickname != null && nickname.trim().isNotEmpty) {
           updateData['nickname'] = nickname.trim();
         }
-        // ───────────────────────────────────────────────────────
 
         await docRef.update(updateData);
         return existingId;
       }
     }
 
-    // New individual
     final autoName = await _generateNickname(animalType, nickname);
     final docRef = await _individuals.add({
       'animalType': animalType,
@@ -155,12 +151,10 @@ class FirebaseService {
     }
   }
 
-  // ADD this new helper method:
   Future<String> _generateNickname(String animalType, String? userNickname) async {
     if (userNickname != null && userNickname.trim().isNotEmpty) {
       return userNickname.trim();
     }
-    // Count existing individuals of this type to generate next number
     final snapshot = await _individuals
         .where('animalType', isEqualTo: animalType)
         .get();
@@ -182,18 +176,34 @@ class FirebaseService {
   }
 
   Stream<List<AnimalSighting>> getUserSightings(String userId) {
-  return _sightings
-    .where('submittedBy', isEqualTo: userId)
-    .orderBy('timestamp', descending: true)
-    .snapshots()
-    .handleError((error) {
-      print('Firestore error: $error');
-    })
-    .map((snap) =>
-      snap.docs
-        .map((doc) => AnimalSighting.fromFirestore(doc))
-        .toList(),
-    );
+    return _sightings
+      .where('submittedBy', isEqualTo: userId)
+      .orderBy('timestamp', descending: true)
+      .snapshots()
+      .handleError((error) {
+        print('Firestore error: $error');
+      })
+      .map((snap) =>
+        snap.docs
+          .map((doc) => AnimalSighting.fromFirestore(doc))
+          .toList(),
+      );
+  }
+
+  // ── Fetch all sightings for a specific individual ─────────
+  Future<List<AnimalSighting>> getSightingsByIndividual(
+      String individualId) async {
+    try {
+      final snapshot = await _sightings
+          .where('individualId', isEqualTo: individualId)
+          .orderBy('timestamp', descending: true)
+          .get();
+      return snapshot.docs
+          .map((doc) => AnimalSighting.fromFirestore(doc))
+          .toList();
+    } catch (e) {
+      return [];
+    }
   }
 
   Future<AnimalIndividual?> getIndividual(String id) async {
