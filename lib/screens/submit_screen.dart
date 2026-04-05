@@ -24,10 +24,12 @@ class _SubmitScreenState extends State<SubmitScreen> {
   final _authService     = AuthService();
   final _picker          = ImagePicker();
   final _nicknameController = TextEditingController();
+  final _characteristicsController  = TextEditingController(); // ← ADD
 
     @override
   void dispose() {
     _nicknameController.dispose();
+    _characteristicsController.dispose(); // ← ADD
     super.dispose();
   }
 
@@ -128,6 +130,7 @@ class _SubmitScreenState extends State<SubmitScreen> {
         newEmbedding: embedding,
         imageUrl:     imageUrl,
         nickname:     _nicknameController.text,
+        characteristics: _characteristicsController.text, 
       );
 
       final sighting = AnimalSighting(
@@ -320,6 +323,23 @@ class _SubmitScreenState extends State<SubmitScreen> {
                 maxLength: 30,
               ),
               const SizedBox(height: 8),
+              TextField(                                    // ← ADD THIS BLOCK
+                controller: _characteristicsController,
+                decoration: InputDecoration(
+                  labelText: 'Characteristics (optional)',
+                  hintText: 'e.g. pink collar, tortie cat, fluffy',
+                  prefixIcon: const Icon(Icons.info_outline),
+                  helperText: 'Describe the animal to help with searching',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                textCapitalization: TextCapitalization.sentences,
+                maxLength: 100,
+                maxLines: 2,
+                minLines: 1,
+              ),
+              const SizedBox(height: 8),
             ],
 
             // Submit Button
@@ -355,6 +375,7 @@ class _SubmitScreenState extends State<SubmitScreen> {
                     _statusMessage   = '';
                     _detectionResult = null;
                     _nicknameController.clear();
+                    _characteristicsController.clear(); 
                   });
                 },
               ),

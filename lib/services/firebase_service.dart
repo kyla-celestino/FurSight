@@ -19,14 +19,11 @@ class FirebaseService {
       final snapshot = await _individuals
           .where('animalType', isEqualTo: animalType)
           .get();
-
       final Map<String, List<double>> embeddings = {};
       for (final doc in snapshot.docs) {
         final data = doc.data() as Map<String, dynamic>;
         final embedding = List<double>.from(data['avgEmbedding'] ?? []);
-        if (embedding.isNotEmpty) {
-          embeddings[doc.id] = embedding;
-        }
+        if (embedding.isNotEmpty) embeddings[doc.id] = embedding;
       }
       return embeddings;
     } catch (e) {
@@ -40,29 +37,23 @@ class FirebaseService {
         'assets/models/seed_embeddings_v3.json',
       );
       final Map<String, dynamic> seedData = json.decode(jsonStr);
-
       WriteBatch batch = _db.batch();
       int count = 0;
-
       for (final entry in seedData.entries) {
         final data = entry.value as Map<String, dynamic>;
-        final animalType = data['animal_type'] as String;
-        final embedding = List<double>.from(data['embedding']);
-        final individual = entry.key;
-
         final docRef = _individuals.doc(
-          individual.replaceAll('/', '_'),
+          entry.key.replaceAll('/', '_'),
         );
         batch.set(docRef, {
-          'animalType': animalType,
-          'avgEmbedding': embedding,
+          'animalType': data['animal_type'] as String,
+          'avgEmbedding': List<double>.from(data['embedding']),
           'sightingCount': 0,
           'firstSeen': Timestamp.now(),
           'lastSeen': Timestamp.now(),
           'latestImageUrl': '',
-          'individual': individual,
+          'nickname': '',
+          'characteristics': '',
         });
-
         count++;
         if (count % 400 == 0) {
           await batch.commit();
@@ -93,6 +84,7 @@ class FirebaseService {
     required List<double> newEmbedding,
     required String imageUrl,
     String? nickname,
+    String? characteristics,
   }) async {
     if (existingId != null) {
       final docRef = _individuals.doc(existingId);
@@ -116,9 +108,11 @@ class FirebaseService {
           'lastSeen': Timestamp.now(),
           'latestImageUrl': imageUrl,
         };
-
         if (nickname != null && nickname.trim().isNotEmpty) {
           updateData['nickname'] = nickname.trim();
+        }
+        if (characteristics != null && characteristics.trim().isNotEmpty) {
+          updateData['characteristics'] = characteristics.trim();
         }
 
         await docRef.update(updateData);
@@ -135,6 +129,7 @@ class FirebaseService {
       'lastSeen': Timestamp.now(),
       'latestImageUrl': imageUrl,
       'nickname': autoName,
+      'characteristics': characteristics?.trim() ?? '',
     });
     return docRef.id;
   }
@@ -151,7 +146,27 @@ class FirebaseService {
     }
   }
 
-  Future<String> _generateNickname(String animalType, String? userNickname) async {
+  // ── Search individuals by nickname or characteristics ─────
+  Future<List<AnimalIndividual>> searchIndividuals(String query) async {
+    if (query.trim().isEmpty) return [];
+    try {
+      final snapshot = await _individuals.get();
+      final q = query.trim().toLowerCase();
+      return snapshot.docs
+          .map((doc) => AnimalIndividual.fromFirestore(doc))
+          .where((ind) {
+            final nameMatch = ind.nickname.toLowerCase().contains(q);
+            final charMatch = ind.characteristics.toLowerCase().contains(q);
+            return nameMatch || charMatch;
+          })
+          .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<String> _generateNickname(
+      String animalType, String? userNickname) async {
     if (userNickname != null && userNickname.trim().isNotEmpty) {
       return userNickname.trim();
     }
@@ -169,28 +184,19 @@ class FirebaseService {
       query = query.where('animalType', isEqualTo: animalType);
     }
     return query.snapshots().map((snap) =>
-      snap.docs
-        .map((doc) => AnimalSighting.fromFirestore(doc))
-        .toList(),
-    );
+        snap.docs.map((doc) => AnimalSighting.fromFirestore(doc)).toList());
   }
 
   Stream<List<AnimalSighting>> getUserSightings(String userId) {
     return _sightings
-      .where('submittedBy', isEqualTo: userId)
-      .orderBy('timestamp', descending: true)
-      .snapshots()
-      .handleError((error) {
-        print('Firestore error: $error');
-      })
-      .map((snap) =>
-        snap.docs
-          .map((doc) => AnimalSighting.fromFirestore(doc))
-          .toList(),
-      );
+        .where('submittedBy', isEqualTo: userId)
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .handleError((error) => print('Firestore error: $error'))
+        .map((snap) =>
+            snap.docs.map((doc) => AnimalSighting.fromFirestore(doc)).toList());
   }
 
-  // ── Fetch all sightings for a specific individual ─────────
   Future<List<AnimalSighting>> getSightingsByIndividual(
       String individualId) async {
     try {

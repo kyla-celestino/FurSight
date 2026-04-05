@@ -7,6 +7,7 @@ import 'heatmap_screen.dart';
 import 'logs_screen.dart';
 import 'hotlines_screen.dart';
 import 'how_it_works_screen.dart';
+import 'search_screen.dart'; // ← NEW
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -41,22 +42,18 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        title: Row(
+        title: const Row(
           children: [
-            const Icon(Icons.pets, color: Colors.white),
-            const SizedBox(width: 8),
-            const Text(
-              'FurFinder',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            Icon(Icons.pets, color: Colors.white),
+            SizedBox(width: 8),
+            Text('FurFinder',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await _authService.signOut();
-            },
+            onPressed: () async => await _authService.signOut(),
             tooltip: 'Sign Out',
           ),
         ],
@@ -65,7 +62,6 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Emergency Banner
             _EmergencyBanner(),
             const SizedBox(height: 16),
 
@@ -78,9 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     'Hello, ${user?.email?.split('@').first ?? 'User'}! 👋',
                     style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                      fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const Text(
                     'Help track campus animals',
@@ -89,18 +83,52 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 16),
+
+            // ── Search bar shortcut ───────────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SearchScreen()),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey[300]!),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.search, color: Colors.grey[500]),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Search by name or characteristics...',
+                        style: TextStyle(
+                          color: Colors.grey[500], fontSize: 14),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
             const SizedBox(height: 20),
 
             // Quick Access
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Quick Access',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              child: Text('Quick Access',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
             const SizedBox(height: 12),
 
@@ -118,45 +146,29 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: Icons.add_a_photo,
                     label: 'Spot/Take\na Photo',
                     color: const Color(0xFF4CAF50),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const SubmitScreen(),
-                      ),
-                    ),
+                    onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const SubmitScreen())),
                   ),
                   _QuickAccessCard(
                     icon: Icons.map,
                     label: 'View\nHeatmap',
                     color: const Color(0xFF2196F3),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const HeatmapScreen(),
-                      ),
-                    ),
+                    onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const HeatmapScreen())),
                   ),
                   _QuickAccessCard(
                     icon: Icons.assignment,
                     label: 'Submission\nLogs',
                     color: const Color(0xFFFF9800),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const LogsScreen(),
-                      ),
-                    ),
+                    onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const LogsScreen())),
                   ),
                   _QuickAccessCard(
                     icon: Icons.emergency,
                     label: 'Emergency\nHotlines',
                     color: const Color(0xFFF44336),
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const HotlinesScreen(),
-                      ),
-                    ),
+                    onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const HotlinesScreen())),
                   ),
                 ],
               ),
@@ -168,25 +180,16 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Card(
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
+                  borderRadius: BorderRadius.circular(16)),
                 child: ListTile(
-                  leading: const Icon(
-                    Icons.help_outline,
-                    color: Color(0xFF4CAF50),
-                  ),
-                  title: const Text(
-                    'How it works?',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
+                  leading: const Icon(Icons.help_outline,
+                    color: Color(0xFF4CAF50)),
+                  title: const Text('How it works?',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: const Text('Learn how to use FurFinder'),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const HowItWorksScreen(),
-                    ),
-                  ),
+                  onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const HowItWorksScreen())),
                 ),
               ),
             ),
@@ -210,23 +213,15 @@ class _EmergencyBanner extends StatelessWidget {
           const Icon(Icons.emergency, color: Colors.white, size: 20),
           const SizedBox(width: 8),
           const Expanded(
-            child: Text(
-              'In Emergency call 119',
+            child: Text('In Emergency call 119',
               style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+                color: Colors.white, fontWeight: FontWeight.bold)),
           ),
           TextButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const HotlinesScreen()),
-            ),
-            child: const Text(
-              'See all',
-              style: TextStyle(color: Colors.white70, fontSize: 12),
-            ),
+            onPressed: () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const HotlinesScreen())),
+            child: const Text('See all',
+              style: TextStyle(color: Colors.white70, fontSize: 12)),
           ),
         ],
       ),
@@ -253,8 +248,7 @@ class _QuickAccessCard extends StatelessWidget {
       onTap: onTap,
       child: Card(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+          borderRadius: BorderRadius.circular(16)),
         elevation: 3,
         child: Container(
           decoration: BoxDecoration(
@@ -270,15 +264,13 @@ class _QuickAccessCard extends StatelessWidget {
             children: [
               Icon(icon, size: 40, color: Colors.white),
               const SizedBox(height: 8),
-              Text(
-                label,
+              Text(label,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
-                ),
-              ),
+                )),
             ],
           ),
         ),
