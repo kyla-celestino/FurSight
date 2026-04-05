@@ -23,6 +23,13 @@ class _SubmitScreenState extends State<SubmitScreen> {
   final _locationService = LocationService();
   final _authService     = AuthService();
   final _picker          = ImagePicker();
+  final _nicknameController = TextEditingController();
+
+    @override
+  void dispose() {
+    _nicknameController.dispose();
+    super.dispose();
+  }
 
   File?            _imageFile;
   SubmitState      _state          = SubmitState.idle;
@@ -120,6 +127,7 @@ class _SubmitScreenState extends State<SubmitScreen> {
         animalType:   detection.animalType,
         newEmbedding: embedding,
         imageUrl:     imageUrl,
+        nickname:     _nicknameController.text,
       );
 
       final sighting = AnimalSighting(
@@ -294,6 +302,26 @@ class _SubmitScreenState extends State<SubmitScreen> {
 
             const SizedBox(height: 16),
 
+            // Optional nickname — only show when image is selected and not processing
+            if (_imageFile != null && !_isProcessing && _state != SubmitState.done) ...[
+              const SizedBox(height: 8),
+              TextField(
+                controller: _nicknameController,
+                decoration: InputDecoration(
+                  labelText: 'Nickname (optional)',
+                  hintText: 'e.g. Whiskers, Brownie...',
+                  prefixIcon: const Icon(Icons.pets),
+                  helperText: 'Leave blank to auto-assign a name',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                textCapitalization: TextCapitalization.words,
+                maxLength: 30,
+              ),
+              const SizedBox(height: 8),
+            ],
+
             // Submit Button
             if (_imageFile != null &&
                 !_isProcessing &&
@@ -326,6 +354,7 @@ class _SubmitScreenState extends State<SubmitScreen> {
                     _state           = SubmitState.idle;
                     _statusMessage   = '';
                     _detectionResult = null;
+                    _nicknameController.clear();
                   });
                 },
               ),

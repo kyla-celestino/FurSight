@@ -76,6 +76,7 @@ class AnimalIndividual {
   final DateTime firstSeen;
   final DateTime lastSeen;
   final String latestImageUrl;
+  final String nickname;
 
   AnimalIndividual({
     required this.id,
@@ -85,6 +86,7 @@ class AnimalIndividual {
     required this.firstSeen,
     required this.lastSeen,
     required this.latestImageUrl,
+    this.nickname = '', 
   });
 
   factory AnimalIndividual.fromFirestore(DocumentSnapshot doc) {
@@ -97,6 +99,7 @@ class AnimalIndividual {
       firstSeen: (data['firstSeen'] as Timestamp).toDate(),
       lastSeen: (data['lastSeen'] as Timestamp).toDate(),
       latestImageUrl: data['latestImageUrl'] ?? '',
+      nickname: data['nickname'] ?? '', 
     );
   }
 
@@ -108,6 +111,7 @@ class AnimalIndividual {
       'firstSeen': Timestamp.fromDate(firstSeen),
       'lastSeen': Timestamp.fromDate(lastSeen),
       'latestImageUrl': latestImageUrl,
+      'nickname': nickname,
     };
   }
 }

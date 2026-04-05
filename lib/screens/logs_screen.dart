@@ -155,6 +155,36 @@ class _SightingCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
+
+                  // ── Nickname row ──────────────────────────
+                  FutureBuilder<String>(
+                    future: FirebaseService()
+                        .getNickname(sighting.individualId),
+                    builder: (context, snap) {
+                      final name = snap.data ?? '...';
+                      return Row(
+                        children: [
+                          const Icon(
+                            Icons.badge_outlined,
+                            size: 12,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            name,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 4),
+                  // ─────────────────────────────────────────
+
                   Row(
                     children: [
                       const Icon(

@@ -92,6 +92,7 @@ class FirebaseService {
     required String animalType,
     required List<double> newEmbedding,
     required String imageUrl,
+    String? nickname,
   }) async {
     if (existingId != null) {
       final docRef = _individuals.doc(existingId);
@@ -109,16 +110,27 @@ class FirebaseService {
           );
         }
 
-        await docRef.update({
+        // ── Build update map ───────────────────────────────────
+        final updateData = <String, dynamic>{
           'avgEmbedding': updatedEmbedding,
           'sightingCount': FieldValue.increment(1),
           'lastSeen': Timestamp.now(),
           'latestImageUrl': imageUrl,
-        });
+        };
+
+        // Only update nickname if user provided a non-empty one
+        if (nickname != null && nickname.trim().isNotEmpty) {
+          updateData['nickname'] = nickname.trim();
+        }
+        // ───────────────────────────────────────────────────────
+
+        await docRef.update(updateData);
         return existingId;
       }
     }
 
+    // New individual
+    final autoName = await _generateNickname(animalType, nickname);
     final docRef = await _individuals.add({
       'animalType': animalType,
       'avgEmbedding': newEmbedding,
@@ -126,8 +138,35 @@ class FirebaseService {
       'firstSeen': Timestamp.now(),
       'lastSeen': Timestamp.now(),
       'latestImageUrl': imageUrl,
+      'nickname': autoName,
     });
     return docRef.id;
+  }
+
+  Future<String> getNickname(String individualId) async {
+    try {
+      if (individualId.isEmpty) return 'Unknown';
+      final doc = await _individuals.doc(individualId).get();
+      if (!doc.exists) return 'Unknown';
+      final data = doc.data() as Map<String, dynamic>;
+      return data['nickname'] ?? 'Unknown';
+    } catch (e) {
+      return 'Unknown';
+    }
+  }
+
+  // ADD this new helper method:
+  Future<String> _generateNickname(String animalType, String? userNickname) async {
+    if (userNickname != null && userNickname.trim().isNotEmpty) {
+      return userNickname.trim();
+    }
+    // Count existing individuals of this type to generate next number
+    final snapshot = await _individuals
+        .where('animalType', isEqualTo: animalType)
+        .get();
+    final count = snapshot.docs.length + 1;
+    final prefix = animalType == 'cat' ? 'Cat' : 'Dog';
+    return '$prefix ${count.toString().padLeft(2, '0')}';
   }
 
   Stream<List<AnimalSighting>> getSightingsStream({String? animalType}) {
