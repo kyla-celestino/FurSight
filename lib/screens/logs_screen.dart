@@ -207,16 +207,26 @@ class _SightingCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Name — big and bold on top
                     Row(
                       children: [
-                        Icon(Icons.pets, size: 16,
-                          color: sighting.animalType == 'cat'
-                            ? Colors.orange : Colors.brown),
-                        const SizedBox(width: 4),
-                        Text(sighting.animalType.toUpperCase(),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 13)),
-                        const Spacer(),
+                        Expanded(
+                          child: FutureBuilder<String>(
+                            future: FirebaseService()
+                                .getNickname(sighting.individualId),
+                            builder: (context, snap) {
+                              final name = snap.data ?? '...';
+                              return Text(
+                                name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 15),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 2),
@@ -238,24 +248,19 @@ class _SightingCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
 
-                    // Nickname
-                    FutureBuilder<String>(
-                      future: FirebaseService()
-                          .getNickname(sighting.individualId),
-                      builder: (context, snap) {
-                        final name = snap.data ?? '...';
-                        return Row(
-                          children: [
-                            const Icon(Icons.badge_outlined,
-                              size: 12, color: Colors.grey),
-                            const SizedBox(width: 2),
-                            Text(name,
-                              style: const TextStyle(
-                                fontSize: 12, fontWeight: FontWeight.w600,
-                                color: Colors.black87)),
-                          ],
-                        );
-                      },
+                    // Animal type — smaller below name
+                    Row(
+                      children: [
+                        Icon(Icons.pets, size: 13,
+                          color: sighting.animalType == 'cat'
+                            ? Colors.orange : Colors.brown),
+                        const SizedBox(width: 4),
+                        Text(sighting.animalType.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 11, fontWeight: FontWeight.w600,
+                            color: sighting.animalType == 'cat'
+                              ? Colors.orange : Colors.brown)),
+                      ],
                     ),
                     const SizedBox(height: 4),
 
