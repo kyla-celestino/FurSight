@@ -157,13 +157,6 @@ class AIService {
 
     final embedding = output[0];
     final norm = sqrt(embedding.fold(0.0, (sum, v) => sum + v * v));
-    
-    // ── DEBUG ──────────────────────────────────────────
-    print('=== EMBEDDING DEBUG ===');
-    print('Raw norm before normalize: $norm');
-    print('First 5 values: ${embedding.sublist(0, 5)}');
-    // ───────────────────────────────────────────────────
-
     if (norm > 0) {
       return embedding.map((v) => v / norm).toList();
     }
@@ -184,6 +177,7 @@ class AIService {
     return denom == 0 ? 0.0 : dot / denom;
   }
 
+  // ── Used by submission pipeline ───────────────────────────
   Map<String, dynamic> findBestMatch(
     List<double> queryEmbedding,
     Map<String, List<double>> knownEmbeddings,
@@ -191,22 +185,13 @@ class AIService {
     String? bestId;
     double bestSim = 0.0;
 
-    // ── DEBUG ──────────────────────────────────────────
-    print('=== FINDBESTMATCH DEBUG ===');
-    print('Known embeddings count: ${knownEmbeddings.length}');
-    print('Query embedding first 5: ${queryEmbedding.sublist(0, 5)}');
-    // ───────────────────────────────────────────────────
-
     for (final entry in knownEmbeddings.entries) {
       final sim = cosineSimilarity(queryEmbedding, entry.value);
-      print('  ${entry.key} → sim: $sim'); // DEBUG
       if (sim > bestSim) {
         bestSim = sim;
         bestId = entry.key;
       }
     }
-
-    print('Best match: $bestId at $bestSim vs threshold $SIMILARITY_THRESHOLD'); // DEBUG
 
     if (bestSim >= SIMILARITY_THRESHOLD) {
       return {'individualId': bestId, 'similarity': bestSim};
@@ -214,10 +199,32 @@ class AIService {
     return {'individualId': null, 'similarity': bestSim};
   }
 
-  // For detection (unchanged — no normalization needed for YOLO)
-List<List<List<List<double>>>> _imageToFloat32Detection(
-  img.Image image,
-  int size,
+  // ── Used by image search — returns top N ranked matches ───
+  List<Map<String, dynamic>> findTopMatches(
+    List<double> queryEmbedding,
+    Map<String, List<double>> knownEmbeddings, {
+    int topN = 5,
+    double minSimilarity = 0.30,
+  }) {
+    final scores = <Map<String, dynamic>>[];
+
+    for (final entry in knownEmbeddings.entries) {
+      final sim = cosineSimilarity(queryEmbedding, entry.value);
+      if (sim >= minSimilarity) {
+        scores.add({'individualId': entry.key, 'similarity': sim});
+      }
+    }
+
+    // Sort descending by similarity
+    scores.sort((a, b) =>
+        (b['similarity'] as double).compareTo(a['similarity'] as double));
+
+    return scores.take(topN).toList();
+  }
+
+  List<List<List<List<double>>>> _imageToFloat32Detection(
+    img.Image image,
+    int size,
   ) {
     return List.generate(
       1,
@@ -238,10 +245,9 @@ List<List<List<List<double>>>> _imageToFloat32Detection(
     );
   }
 
-// For reid — applies ImageNet mean/std normalization
-List<List<List<List<double>>>> _imageToFloat32Reid(
-  img.Image image,
-  int size,
+  List<List<List<List<double>>>> _imageToFloat32Reid(
+    img.Image image,
+    int size,
   ) {
     const mean = [0.485, 0.456, 0.406];
     const std  = [0.229, 0.224, 0.225];

@@ -31,6 +31,40 @@ class FirebaseService {
     }
   }
 
+  // ── Load ALL embeddings across cat + dog (for image search) ─
+  Future<Map<String, List<double>>> getAllEmbeddings() async {
+    try {
+      final snapshot = await _individuals.get();
+      final Map<String, List<double>> embeddings = {};
+      for (final doc in snapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final embedding = List<double>.from(data['avgEmbedding'] ?? []);
+        if (embedding.isNotEmpty) embeddings[doc.id] = embedding;
+      }
+      return embeddings;
+    } catch (e) {
+      return {};
+    }
+  }
+
+  // ── Fetch multiple individuals by their IDs ───────────────
+  Future<List<AnimalIndividual>> getIndividualsByIds(
+      List<String> ids) async {
+    if (ids.isEmpty) return [];
+    try {
+      final results = <AnimalIndividual>[];
+      for (final id in ids) {
+        final doc = await _individuals.doc(id).get();
+        if (doc.exists) {
+          results.add(AnimalIndividual.fromFirestore(doc));
+        }
+      }
+      return results;
+    } catch (e) {
+      return [];
+    }
+  }
+
   Future<void> uploadSeedEmbeddings() async {
     try {
       final jsonStr = await rootBundle.loadString(
@@ -146,7 +180,6 @@ class FirebaseService {
     }
   }
 
-  // ── Search individuals by nickname or characteristics ─────
   Future<List<AnimalIndividual>> searchIndividuals(String query) async {
     if (query.trim().isEmpty) return [];
     try {
