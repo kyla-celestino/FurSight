@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:image/image.dart' as img;
+
 import '../services/ai_service.dart';
 import '../services/firebase_service.dart';
 import '../services/location_service.dart';
@@ -18,47 +18,44 @@ class SubmitScreen extends StatefulWidget {
 }
 
 class _SubmitScreenState extends State<SubmitScreen> {
-  final _aiService       = AIService();
-  final _firebaseService = FirebaseService();
-  final _locationService = LocationService();
-  final _authService     = AuthService();
-  final _picker          = ImagePicker();
-  final _nicknameController = TextEditingController();
-  final _characteristicsController  = TextEditingController(); // ← ADD
+  final _aiService              = AIService();
+  final _firebaseService        = FirebaseService();
+  final _locationService        = LocationService();
+  final _authService            = AuthService();
+  final _picker                 = ImagePicker();
+  final _nicknameController     = TextEditingController();
+  final _characteristicsController = TextEditingController();
 
-    @override
+  @override
   void dispose() {
     _nicknameController.dispose();
-    _characteristicsController.dispose(); // ← ADD
+    _characteristicsController.dispose();
     super.dispose();
   }
 
   File?            _imageFile;
-  SubmitState      _state          = SubmitState.idle;
-  String           _statusMessage  = '';
+  SubmitState      _state         = SubmitState.idle;
+  String           _statusMessage = '';
   DetectionResult? _detectionResult;
   String?          _matchedIndividualId;
-  double           _similarity     = 0.0;
+  double           _similarity    = 0.0;
   bool             _isNewIndividual = false;
 
   Future<void> _pickImage(ImageSource source) async {
     final picked = await _picker.pickImage(
-      source: source,
-      imageQuality: 90,
-      maxWidth: 1024,
+      source: source, imageQuality: 90, maxWidth: 1024,
     );
     if (picked == null) return;
     setState(() {
-      _imageFile      = File(picked.path);
-      _state          = SubmitState.idle;
+      _imageFile       = File(picked.path);
+      _state           = SubmitState.idle;
       _detectionResult = null;
-      _statusMessage  = '';
+      _statusMessage   = '';
     });
   }
 
   Future<void> _runPipeline() async {
     if (_imageFile == null) return;
-
     final hour = DateTime.now().hour;
     if (hour < 8 || hour >= 17) {
       _showWarning(
@@ -74,8 +71,8 @@ class _SubmitScreenState extends State<SubmitScreen> {
     if (_imageFile == null) return;
     try {
       setState(() {
-        _state          = SubmitState.detecting;
-        _statusMessage  = 'Detecting animal...';
+        _state         = SubmitState.detecting;
+        _statusMessage = 'Detecting animal...';
       });
 
       final detection = await _aiService.detectAnimal(_imageFile!);
@@ -91,10 +88,10 @@ class _SubmitScreenState extends State<SubmitScreen> {
       setState(() {
         _state         = SubmitState.identifying;
         _statusMessage =
-          'Identified as ${detection.animalType}! Checking identity...';
+            'Identified as ${detection.animalType}! Checking identity...';
       });
 
-      final embedding = await _aiService.getEmbedding(detection.croppedImage);
+      final embedding      = await _aiService.getEmbedding(detection.croppedImage);
       final knownEmbeddings = await _firebaseService.loadEmbeddings(
         detection.animalType,
       );
@@ -104,14 +101,11 @@ class _SubmitScreenState extends State<SubmitScreen> {
       _similarity          = match['similarity'];
       _isNewIndividual     = _matchedIndividualId == null;
 
-      setState(() {
-        _statusMessage = 'Getting location...';
-      });
+      setState(() { _statusMessage = 'Getting location...'; });
 
-      final position = await _locationService.getCurrentLocation();
+      final position     = await _locationService.getCurrentLocation();
       final locationName = await _locationService.getAddressFromCoordinates(
-        position.latitude,
-        position.longitude,
+        position.latitude, position.longitude,
       );
 
       setState(() {
@@ -120,17 +114,16 @@ class _SubmitScreenState extends State<SubmitScreen> {
       });
 
       final imageUrl = await _firebaseService.uploadImage(
-        _imageFile!,
-        detection.animalType,
+        _imageFile!, detection.animalType,
       );
 
       final individualId = await _firebaseService.updateIndividual(
-        existingId:   _matchedIndividualId,
-        animalType:   detection.animalType,
-        newEmbedding: embedding,
-        imageUrl:     imageUrl,
-        nickname:     _nicknameController.text,
-        characteristics: _characteristicsController.text, 
+        existingId:      _matchedIndividualId,
+        animalType:      detection.animalType,
+        newEmbedding:    embedding,
+        imageUrl:        imageUrl,
+        nickname:        _nicknameController.text,
+        characteristics: _characteristicsController.text,
       );
 
       final sighting = AnimalSighting(
@@ -154,8 +147,8 @@ class _SubmitScreenState extends State<SubmitScreen> {
       setState(() {
         _state         = SubmitState.done;
         _statusMessage = _isNewIndividual
-          ? '🐾 New ${detection.animalType} added to the database!'
-          : '✅ Matched with a known ${detection.animalType}!';
+            ? '🐾 New ${detection.animalType} added to the database!'
+            : '✅ Matched with a known ${detection.animalType}!';
       });
     } catch (e) {
       setState(() {
@@ -189,199 +182,271 @@ class _SubmitScreenState extends State<SubmitScreen> {
   }
 
   bool get _isProcessing =>
-    _state == SubmitState.detecting  ||
-    _state == SubmitState.identifying ||
-    _state == SubmitState.uploading;
+      _state == SubmitState.detecting ||
+      _state == SubmitState.identifying ||
+      _state == SubmitState.uploading;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Report a Sighting')),
+      backgroundColor: const Color(0xFFF0EDE8),
+      appBar: _buildAppBar(),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image Preview
+            // ── Page title ───────────────────────────────────
+            const Text(
+              'Report a Sighting',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1a1a1a),
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Help the community by documenting found\nor wandering pets with clarity.',
+              style: TextStyle(
+                fontSize: 13,
+                color: Color(0xFF888888),
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // ── Viewfinder card ──────────────────────────────
             GestureDetector(
               onTap: _isProcessing ? null : _showImagePicker,
-              child: Container(
-                height: 280,
+              child: AspectRatio(
+                aspectRatio: 4 / 3,
+                child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey[300]!),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x0F000000),
+                      blurRadius: 8, offset: Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: _imageFile != null
                   ? ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Image.file(_imageFile!, fit: BoxFit.cover),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Image.file(_imageFile!, fit: BoxFit.cover,
+                          width: double.infinity, height: double.infinity),
                     )
                   : Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.add_a_photo,
-                          size: 60, color: Colors.grey[400]),
+                        Container(
+                          width: 60, height: 60,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF2e7d32),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.camera_alt,
+                              color: Colors.white, size: 28),
+                        ),
                         const SizedBox(height: 12),
-                        Text(
-                          'Tap to take or upload a photo',
-                          style: TextStyle(color: Colors.grey[600]),
+                        const Text(
+                          'LIVE VIEWFINDER',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFFAAAAAA),
+                            letterSpacing: 1.0,
+                          ),
                         ),
                       ],
                     ),
+                ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
 
-            // Image Picker Buttons
+            // ── Photo picker buttons ─────────────────────────
             if (!_isProcessing) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.camera_alt),
-                      label: const Text('Camera'),
-                      onPressed: () => _pickImage(ImageSource.camera),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.camera_alt_outlined, size: 18),
+                  label: const Text('Take Photo'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2e7d32),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(100),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.photo_library),
-                      label: const Text('Gallery'),
-                      onPressed: () => _pickImage(ImageSource.gallery),
+                  onPressed: () => _pickImage(ImageSource.camera),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton.icon(
+                  icon: const Icon(Icons.image_outlined, size: 18),
+                  label: const Text('Upload from Gallery'),
+                  style: TextButton.styleFrom(
+                    backgroundColor: const Color(0xFFFCEDE8),
+                    foregroundColor: const Color(0xFF795548),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(100),
                     ),
                   ),
-                ],
+                  onPressed: () => _pickImage(ImageSource.gallery),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+
+            // ── Status card ──────────────────────────────────
+            if (_statusMessage.isNotEmpty) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: _state == SubmitState.error
+                    ? const Color(0xFFFCEDE8)
+                    : _state == SubmitState.done
+                      ? const Color(0xFFE8F5E9)
+                      : const Color(0xFFE3F2FD),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  children: [
+                    if (_isProcessing) ...[
+                      const CircularProgressIndicator(
+                          color: Color(0xFF2e7d32)),
+                      const SizedBox(height: 12),
+                    ],
+                    Text(
+                      _statusMessage,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: _state == SubmitState.error
+                          ? const Color(0xFFD32F2F)
+                          : _state == SubmitState.done
+                            ? const Color(0xFF2e7d32)
+                            : const Color(0xFF1565c0),
+                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
+                      ),
+                    ),
+                    if (_state == SubmitState.done &&
+                        _detectionResult != null) ...[
+                      const SizedBox(height: 12),
+                      _ResultDetails(
+                        animalType: _detectionResult!.animalType,
+                        confidence: _detectionResult!.confidence,
+                        similarity: _similarity,
+                        isNew: _isNewIndividual,
+                      ),
+                    ],
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
             ],
 
-            // Status Card
-            if (_statusMessage.isNotEmpty)
-              Card(
-                color: _state == SubmitState.error
-                  ? Colors.red[50]
-                  : _state == SubmitState.done
-                    ? Colors.green[50]
-                    : Colors.blue[50],
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      if (_isProcessing) ...[
-                        const CircularProgressIndicator(),
-                        const SizedBox(height: 12),
-                      ],
-                      Text(
-                        _statusMessage,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: _state == SubmitState.error
-                            ? Colors.red
-                            : _state == SubmitState.done
-                              ? Colors.green
-                              : Colors.blue[800],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      if (_state == SubmitState.done &&
-                          _detectionResult != null) ...[
-                        const SizedBox(height: 12),
-                        _ResultDetails(
-                          animalType: _detectionResult!.animalType,
-                          confidence: _detectionResult!.confidence,
-                          similarity: _similarity,
-                          isNew: _isNewIndividual,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-
-            const SizedBox(height: 16),
-
-            // Optional nickname — only show when image is selected and not processing
-            if (_imageFile != null && !_isProcessing && _state != SubmitState.done) ...[
-              const SizedBox(height: 8),
-              TextField(
-                controller: _nicknameController,
-                decoration: InputDecoration(
-                  labelText: 'Nickname (optional)',
-                  hintText: 'e.g. Whiskers, Brownie...',
-                  prefixIcon: const Icon(Icons.pets),
-                  helperText: 'Leave blank to auto-assign a name',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                textCapitalization: TextCapitalization.words,
-                maxLength: 30,
-              ),
-              const SizedBox(height: 8),
-              TextField(                                    // ← ADD THIS BLOCK
-                controller: _characteristicsController,
-                decoration: InputDecoration(
-                  labelText: 'Characteristics (optional)',
-                  hintText: 'e.g. pink collar, tortie cat, fluffy',
-                  prefixIcon: const Icon(Icons.info_outline),
-                  helperText: 'Describe the animal to help with searching',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                textCapitalization: TextCapitalization.sentences,
-                maxLength: 100,
-                maxLines: 2,
-                minLines: 1,
-              ),
-              const SizedBox(height: 8),
-            ],
-
-            // Submit Button
+            // ── Form fields ──────────────────────────────────
             if (_imageFile != null &&
                 !_isProcessing &&
-                _state != SubmitState.done)
-              ElevatedButton.icon(
-                icon: const Icon(Icons.send),
-                label: const Text('Submit Sighting'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: _runPipeline,
+                _state != SubmitState.done) ...[
+              _FieldLabel('PET NAME (OPTIONAL)'),
+              const SizedBox(height: 6),
+              _FormField(
+                controller: _nicknameController,
+                hint: 'e.g. Buddy',
+                capitalization: TextCapitalization.words,
+                maxLength: 30,
               ),
-
-            if (_state == SubmitState.done)
-              ElevatedButton.icon(
-                icon: const Icon(Icons.add),
-                label: const Text('Report Another'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _FieldLabel('TYPE / BREED'),
+                        const SizedBox(height: 6),
+                        _FormField(
+                          controller: _characteristicsController,
+                          hint: 'e.g. Golden Retriever',
+                          maxLength: 60,
+                          suffix: const Icon(Icons.search,
+                              size: 16, color: Color(0xFFAAAAAA)),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                onPressed: () {
-                  setState(() {
-                    _imageFile       = null;
-                    _state           = SubmitState.idle;
-                    _statusMessage   = '';
-                    _detectionResult = null;
-                    _nicknameController.clear();
-                    _characteristicsController.clear(); 
-                  });
-                },
+                ],
               ),
+              const SizedBox(height: 24),
 
-            const SizedBox(height: 20),
-            _PhotoGuidelines(),
+              // Submit button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.send_rounded, size: 18),
+                  label: const Text('Submit Sighting'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2e7d32),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
+                  onPressed: _runPipeline,
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // ── Done — report another ────────────────────────
+            if (_state == SubmitState.done) ...[
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Report Another'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2e7d32),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _imageFile                = null;
+                      _state                   = SubmitState.idle;
+                      _statusMessage           = '';
+                      _detectionResult         = null;
+                      _nicknameController.clear();
+                      _characteristicsController.clear();
+                    });
+                  },
+                ),
+              ),
+            ],
+
+            // ── Always-visible photo tips ─────────────────────
+            const SizedBox(height: 8),
+            _PhotoGuidelinesCard(),
+            const SizedBox(height: 8),
           ],
         ),
       ),
@@ -391,12 +456,32 @@ class _SubmitScreenState extends State<SubmitScreen> {
   void _showImagePicker() {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (_) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
             ListTile(
-              leading: const Icon(Icons.camera_alt),
+              leading: Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.camera_alt,
+                    color: Color(0xFF2e7d32), size: 18),
+              ),
               title: const Text('Take a Photo'),
               onTap: () {
                 Navigator.pop(context);
@@ -404,20 +489,121 @@ class _SubmitScreenState extends State<SubmitScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library),
+              leading: Container(
+                width: 36, height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.photo_library,
+                    color: Color(0xFF2e7d32), size: 18),
+              ),
               title: const Text('Choose from Gallery'),
               onTap: () {
                 Navigator.pop(context);
                 _pickImage(ImageSource.gallery);
               },
             ),
+            const SizedBox(height: 16),
           ],
+        ),
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: const Color(0xFFF0EDE8),
+      elevation: 0,
+      surfaceTintColor: Colors.transparent,
+      automaticallyImplyLeading: false,
+      title: const Row(
+        children: [
+          Icon(Icons.pets, color: Color(0xFF1b5e20), size: 20),
+          SizedBox(width: 8),
+          Text(
+            'FurFinder',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1b5e20),
+            ),
+          ),
+        ],
+      ),
+      actions: const [
+        Padding(
+          padding: EdgeInsets.only(right: 12),
+          child: Icon(Icons.notifications_outlined,
+              color: Color(0xFF777777), size: 22),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Shared form widgets ───────────────────────────────────────
+class _FieldLabel extends StatelessWidget {
+  final String text;
+  const _FieldLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        color: Color(0xFF888888),
+        letterSpacing: 0.6,
+      ),
+    );
+  }
+}
+
+class _FormField extends StatelessWidget {
+  final TextEditingController controller;
+  final String hint;
+  final TextCapitalization capitalization;
+  final int? maxLength;
+  final Widget? suffix;
+  const _FormField({
+    required this.controller,
+    required this.hint,
+    this.capitalization = TextCapitalization.none,
+    this.maxLength,
+    this.suffix,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8E5E0),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: TextField(
+        controller: controller,
+        maxLength: maxLength,
+
+        textCapitalization: capitalization,
+        style: const TextStyle(fontSize: 14, color: Color(0xFF1a1a1a)),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(
+              color: Color(0xFFAAAAAA), fontSize: 13),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14, vertical: 14),
+          counterText: '',
+          suffixIcon: suffix,
         ),
       ),
     );
   }
 }
 
+// ── Result details ────────────────────────────────────────────
 class _ResultDetails extends StatelessWidget {
   final String animalType;
   final double confidence;
@@ -440,14 +626,14 @@ class _ResultDetails extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _Stat('Animal', animalType.toUpperCase()),
-            _Stat(
-              'Detection',
-              '${(confidence * 100).toStringAsFixed(1)}%',
-            ),
+            _Stat('Detection',
+                '${(confidence * 100).toStringAsFixed(1)}%'),
             _Stat(
               'Status',
               isNew ? 'NEW' : 'KNOWN',
-              color: isNew ? Colors.orange : Colors.green,
+              color: isNew
+                  ? const Color(0xFFe65100)
+                  : const Color(0xFF2e7d32),
             ),
           ],
         ),
@@ -467,15 +653,14 @@ class _Stat extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 11, color: Colors.grey),
-        ),
+        Text(label,
+            style: const TextStyle(
+                fontSize: 11, color: Color(0xFF888888))),
         Text(
           value,
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: color ?? Colors.black87,
+            color: color ?? const Color(0xFF1a1a1a),
           ),
         ),
       ],
@@ -483,36 +668,46 @@ class _Stat extends StatelessWidget {
   }
 }
 
-class _PhotoGuidelines extends StatelessWidget {
+// ── Photo guidelines card ─────────────────────────────────────
+class _PhotoGuidelinesCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF8E8),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 8, offset: Offset(0, 2),
+          ),
+        ],
       ),
-      color: Colors.amber[50],
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.tips_and_updates, color: Colors.amber),
-                SizedBox(width: 8),
-                Text(
-                  'Photo Tips',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.tips_and_updates,
+                  color: Color(0xFFe65100), size: 18),
+              SizedBox(width: 8),
+              Text(
+                'Photo Tips',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  color: Color(0xFF1a1a1a),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            _Tip('Take photos between 8:00 AM and 5:00 PM'),
-            _Tip('Make sure the animal is clearly visible'),
-            _Tip('Avoid blurry or dark images'),
-            _Tip('Animal should fill most of the frame'),
-          ],
-        ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          _Tip('Take photos between 8:00 AM and 5:00 PM'),
+          _Tip('Make sure the animal is clearly visible'),
+          _Tip('Avoid blurry or dark images'),
+          _Tip('Animal should fill most of the frame'),
+        ],
       ),
     );
   }
@@ -525,17 +720,16 @@ class _Tip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         children: [
-          const Icon(
-            Icons.check_circle_outline,
-            size: 16,
-            color: Colors.green,
-          ),
+          const Icon(Icons.check_circle_outline,
+              size: 15, color: Color(0xFF2e7d32)),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(text, style: const TextStyle(fontSize: 13)),
+            child: Text(text,
+                style: const TextStyle(
+                    fontSize: 12, color: Color(0xFF555555))),
           ),
         ],
       ),

@@ -22,196 +22,245 @@ class _LogsScreenState extends State<LogsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
-      appBar: AppBar(title: const Text('Submission Logs')),
-      body: Column(
-        children: [
-          // ── Search bar + Filter ───────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const SearchScreen()),
-                    ),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: const Color(0xFFe0e0e0), width: 0.5),
+      backgroundColor: const Color(0xFFF0EDE8),
+      appBar: _buildAppBar(),
+      body: StreamBuilder<List<AnimalSighting>>(
+        stream: _firebaseService.getUserSightings(_authService.currentUserId),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFF2e7d32)),
+            );
+          }
+
+          final allSightings = snapshot.data ?? [];
+          final sightings    = _filter == 'all'
+              ? allSightings
+              : allSightings.where((s) => s.animalType == _filter).toList();
+
+          return CustomScrollView(
+            slivers: [
+              // ── Header ──────────────────────────────────────
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Submission Logs',
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1a1a1a),
+                        ),
                       ),
-                      child: const Row(
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Your contribution to the community helps\nbring pets back home.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF888888),
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      // ── Search bar ─────────────────────────
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const SearchScreen()),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(100),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x0F000000),
+                                blurRadius: 8, offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.search,
+                                  color: Color(0xFF888888), size: 18),
+                              SizedBox(width: 8),
+                              Text(
+                                'Search animals...',
+                                style: TextStyle(
+                                    color: Color(0xFFBBBBBB), fontSize: 13),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // ── Filter chips ───────────────────────
+                      Row(
                         children: [
-                          Icon(Icons.search,
-                            color: Color(0xFF888888), size: 18),
-                          SizedBox(width: 8),
-                          Text(
-                            'Search animals...',
-                            style: TextStyle(
-                              color: Color(0xFFbbbbbb), fontSize: 13),
+                          _LogsFilterChip(
+                            label: 'All',
+                            isActive: _filter == 'all',
+                            onTap: () => setState(() => _filter = 'all'),
+                          ),
+                          const SizedBox(width: 8),
+                          _LogsFilterChip(
+                            label: 'Dogs',
+                            isActive: _filter == 'dog',
+                            onTap: () => setState(() => _filter = 'dog'),
+                          ),
+                          const SizedBox(width: 8),
+                          _LogsFilterChip(
+                            label: 'Cats',
+                            isActive: _filter == 'cat',
+                            onTap: () => setState(() => _filter = 'cat'),
                           ),
                         ],
                       ),
-                    ),
+                      const SizedBox(height: 16),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 8),
-
-                GestureDetector(
-                  onTap: () => _showFilterSheet(context),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: const Color(0xFFe0e0e0), width: 0.5),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.filter_list,
-                          size: 16, color: Color(0xFF555555)),
-                        const SizedBox(width: 4),
-                        Text(
-                          _filterLabel,
-                          style: const TextStyle(
-                            fontSize: 12, color: Color(0xFF555555)),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // ── Logs list ─────────────────────────────────────
-          Expanded(
-            child: StreamBuilder<List<AnimalSighting>>(
-              stream: _firebaseService.getUserSightings(
-                _authService.currentUserId,
               ),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
 
-                final allSightings = snapshot.data ?? [];
-
-                final sightings = _filter == 'all'
-                  ? allSightings
-                  : allSightings
-                      .where((s) => s.animalType == _filter)
-                      .toList();
-
-                if (sightings.isEmpty) {
-                  return Center(
+              // ── Empty state ────────────────────────────────
+              if (sightings.isEmpty)
+                SliverFillRemaining(
+                  child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.pets, size: 64,
-                          color: Color(0xFFc8e6c9)),
+                        const Icon(Icons.pets,
+                            size: 64, color: Color(0xFFc8e6c9)),
                         const SizedBox(height: 16),
                         Text(
                           allSightings.isEmpty
-                            ? 'No submissions yet'
-                            : 'No ${_filter == 'cat' ? 'cat' : 'dog'} submissions',
+                              ? 'No submissions yet'
+                              : 'No ${_filter == 'cat' ? 'cat' : 'dog'} submissions',
                           style: TextStyle(
-                            color: Colors.grey[600], fontSize: 18),
+                              color: Colors.grey[600], fontSize: 18),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           allSightings.isEmpty
-                            ? 'Be the first to report a sighting!'
-                            : 'Try switching the filter',
+                              ? 'Be the first to report a sighting!'
+                              : 'Try switching the filter',
                           style: TextStyle(color: Colors.grey[500]),
                         ),
                       ],
                     ),
-                  );
-                }
+                  ),
+                ),
 
-                return ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  itemCount: sightings.length,
-                  itemBuilder: (context, index) {
-                    return _SightingCard(sighting: sightings[index]);
-                  },
-                );
-              },
-            ),
-          ),
-        ],
+              // ── Sightings list ─────────────────────────────
+              if (sightings.isNotEmpty)
+                SliverPadding(
+                  padding:
+                      const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => _SightingCard(
+                        sighting: sightings[index],
+                        isFirst: index == 0,
+                      ),
+                      childCount: sightings.length,
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  String get _filterLabel {
-    switch (_filter) {
-      case 'cat': return 'Cats';
-      case 'dog': return 'Dogs';
-      default:    return 'All';
-    }
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: const Color(0xFFF0EDE8),
+      elevation: 0,
+      surfaceTintColor: Colors.transparent,
+      automaticallyImplyLeading: false,
+      title: const Row(
+        children: [
+          Icon(Icons.pets, color: Color(0xFF1b5e20), size: 20),
+          SizedBox(width: 8),
+          Text(
+            'FurFinder',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1b5e20),
+            ),
+          ),
+        ],
+      ),
+      actions: const [
+        Padding(
+          padding: EdgeInsets.only(right: 12),
+          child: Icon(Icons.notifications_outlined,
+              color: Color(0xFF777777), size: 22),
+        ),
+      ],
+    );
   }
 
-  void _showFilterSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            ListTile(
-              title: const Text('All'),
-              trailing: _filter == 'all'
-                ? const Icon(Icons.check, color: Color(0xFF2e7d32))
-                : null,
-              onTap: () {
-                setState(() => _filter = 'all');
-                Navigator.pop(context);
-              },
+}
+
+// ── Filter chip (logs) ────────────────────────────────────────
+class _LogsFilterChip extends StatelessWidget {
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _LogsFilterChip({
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFF2e7d32) : Colors.white,
+          borderRadius: BorderRadius.circular(100),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0F000000),
+              blurRadius: 6, offset: Offset(0, 2),
             ),
-            ListTile(
-              title: const Text('Cats'),
-              trailing: _filter == 'cat'
-                ? const Icon(Icons.check, color: Color(0xFF2e7d32))
-                : null,
-              onTap: () {
-                setState(() => _filter = 'cat');
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              title: const Text('Dogs'),
-              trailing: _filter == 'dog'
-                ? const Icon(Icons.check, color: Color(0xFF2e7d32))
-                : null,
-              onTap: () {
-                setState(() => _filter = 'dog');
-                Navigator.pop(context);
-              },
-            ),
-            const SizedBox(height: 8),
           ],
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: isActive ? Colors.white : const Color(0xFF555555),
+          ),
         ),
       ),
     );
   }
 }
 
+// ── Sighting card ─────────────────────────────────────────────
 class _SightingCard extends StatelessWidget {
   final AnimalSighting sighting;
-  const _SightingCard({required this.sighting});
+  final bool isFirst;
+
+  const _SightingCard({required this.sighting, this.isFirst = false});
 
   void _showDetailModal(BuildContext context) {
     showModalBottomSheet(
@@ -224,137 +273,274 @@ class _SightingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iscat     = sighting.animalType == 'cat';
-    final typeColor = iscat
-      ? const Color(0xFFef6c00)
-      : const Color(0xFF795548);
     final isNew     = sighting.isNewIndividual;
 
-    return GestureDetector(
-      onTap: () => _showDetailModal(context),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFe0e0e0), width: 0.5),
-        ),
-        child: Row(
-          children: [
-            // Thumbnail
-            ClipRRect(
-              borderRadius: const BorderRadius.horizontal(
-                left: Radius.circular(12)),
-              child: sighting.imageUrl.isNotEmpty
-                ? CachedNetworkImage(
-                    imageUrl: sighting.imageUrl,
-                    width: 54, height: 54, fit: BoxFit.cover,
-                    placeholder: (_, __) => _PlaceholderBox(),
-                    errorWidget: (_, __, ___) => _PlaceholderBox(),
-                  )
-                : _PlaceholderBox(),
-            ),
-
-            // Details
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10, vertical: 8),
+    // First item — large featured card
+    if (isFirst) {
+      return GestureDetector(
+        onTap: () => _showDetailModal(context),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x0F000000),
+                blurRadius: 8, offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(20)),
+                    child: sighting.imageUrl.isNotEmpty
+                      ? CachedNetworkImage(
+                          imageUrl: sighting.imageUrl,
+                          height: 190, width: double.infinity,
+                          fit: BoxFit.cover,
+                          placeholder: (_, __) => Container(
+                            height: 190,
+                            color: const Color(0xFFe8f5e9)),
+                          errorWidget: (_, __, ___) => Container(
+                            height: 190, color: const Color(0xFFe8f5e9),
+                            child: const Icon(Icons.pets,
+                                size: 60, color: Color(0xFF2e7d32))),
+                        )
+                      : Container(
+                          height: 190, color: const Color(0xFFe8f5e9),
+                          child: const Icon(Icons.pets,
+                              size: 60, color: Color(0xFF2e7d32))),
+                  ),
+                  // Status badge on photo
+                  Positioned(
+                    top: 12, left: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: isNew
+                            ? const Color(0xFF7A6030)
+                            : const Color(0xFF2e7d32),
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 6, height: 6,
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            isNew ? 'STILL LOST' : 'KNOWN',
+                            style: const TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.all(14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Type + badge
                     Row(
                       children: [
-                        Icon(Icons.pets, size: 11, color: typeColor),
-                        const SizedBox(width: 3),
-                        Text(
-                          sighting.animalType.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w700,
-                            color: typeColor,
+                        Expanded(
+                          child: FutureBuilder<String>(
+                            future: FirebaseService()
+                                .getNickname(sighting.individualId),
+                            builder: (context, snap) => Text(
+                              snap.data ?? '...',
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF1a1a1a),
+                              ),
+                            ),
                           ),
                         ),
-                        const Spacer(),
+                        // Action icons
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
+                          width: 36, height: 36,
                           decoration: BoxDecoration(
-                            color: isNew
-                              ? const Color(0xFFfff8e1)
-                              : const Color(0xFFe8f5e9),
-                            borderRadius: BorderRadius.circular(20),
+                            color: const Color(0xFFF6F4F1),
+                            shape: BoxShape.circle,
                           ),
+                          child: const Icon(Icons.edit_outlined,
+                              size: 16, color: Color(0xFF555555)),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          width: 36, height: 36,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF6F4F1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.share_outlined,
+                              size: 16, color: Color(0xFF555555)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on,
+                            size: 12, color: Color(0xFF888888)),
+                        const SizedBox(width: 3),
+                        Expanded(
                           child: Text(
-                            isNew ? 'NEW' : 'KNOWN',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              color: isNew
-                                ? const Color(0xFFe65100)
-                                : const Color(0xFF2e7d32),
-                            ),
+                            '${sighting.locationName} · ${_timeAgo(sighting.timestamp)}',
+                            style: const TextStyle(
+                              fontSize: 11, color: Color(0xFF888888)),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 3),
-
-                    // Name
-                    FutureBuilder<String>(
-                      future: FirebaseService()
-                          .getNickname(sighting.individualId),
-                      builder: (context, snap) {
-                        final name = snap.data ?? '...';
-                        return Text(
-                          name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                            color: Color(0xFF1a1a1a),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 3),
-
-                    // Meta: location · date
-                    Text(
-                      '📍 ${sighting.locationName} · '
-                      '${DateFormat('MMM d, h:mm a').format(sighting.timestamp)}',
-                      style: const TextStyle(
-                        fontSize: 10, color: Color(0xFF888888)),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
                   ],
                 ),
               ),
-            ),
+            ],
+          ),
+        ),
+      );
+    }
 
-            const Padding(
-              padding: EdgeInsets.only(right: 8),
-              child: Icon(Icons.chevron_right,
-                color: Color(0xFF888888), size: 16),
+    // Subsequent items — compact row
+    return GestureDetector(
+      onTap: () => _showDetailModal(context),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0F000000),
+              blurRadius: 8, offset: Offset(0, 2),
             ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Circular thumbnail
+            Container(
+              width: 52, height: 52,
+              decoration: const BoxDecoration(shape: BoxShape.circle),
+              child: ClipOval(
+                child: sighting.imageUrl.isNotEmpty
+                  ? CachedNetworkImage(
+                      imageUrl: sighting.imageUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => Container(
+                        color: const Color(0xFFe8f5e9),
+                        child: const Icon(Icons.pets,
+                            color: Color(0xFF2e7d32), size: 22)),
+                      errorWidget: (_, __, ___) => Container(
+                        color: const Color(0xFFe8f5e9),
+                        child: const Icon(Icons.pets,
+                            color: Color(0xFF2e7d32), size: 22)),
+                    )
+                  : Container(
+                      color: const Color(0xFFe8f5e9),
+                      child: const Icon(Icons.pets,
+                          color: Color(0xFF2e7d32), size: 22)),
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // Info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: isNew
+                              ? const Color(0xFFE8F5E9)
+                              : const Color(0xFFFCEDE8),
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        child: Text(
+                          isNew ? 'REPORTED' : 'FOUND',
+                          style: TextStyle(
+                            fontSize: 8,
+                            fontWeight: FontWeight.w700,
+                            color: isNew
+                                ? const Color(0xFF2e7d32)
+                                : const Color(0xFFD32F2F),
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _timeAgo(sighting.timestamp),
+                        style: const TextStyle(
+                          fontSize: 10, color: Color(0xFF888888)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  FutureBuilder<String>(
+                    future: FirebaseService()
+                        .getNickname(sighting.individualId),
+                    builder: (context, snap) => Text(
+                      snap.data ?? '...',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 14,
+                        color: Color(0xFF1a1a1a),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Text(
+                    sighting.locationName,
+                    style: const TextStyle(
+                      fontSize: 11, color: Color(0xFF888888)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.more_vert,
+                color: Color(0xFFBBBBBB), size: 18),
           ],
         ),
       ),
     );
   }
-}
 
-class _PlaceholderBox extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 54, height: 54,
-      color: const Color(0xFFe8f5e9),
-      child: const Icon(Icons.pets, color: Color(0xFF2e7d32), size: 22),
-    );
+  String _timeAgo(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
   }
 }
 
@@ -364,7 +550,8 @@ class _SightingDetailModal extends StatefulWidget {
   const _SightingDetailModal({required this.sighting});
 
   @override
-  State<_SightingDetailModal> createState() => _SightingDetailModalState();
+  State<_SightingDetailModal> createState() =>
+      _SightingDetailModalState();
 }
 
 class _SightingDetailModalState extends State<_SightingDetailModal> {
@@ -413,12 +600,12 @@ class _SightingDetailModalState extends State<_SightingDetailModal> {
 
   @override
   Widget build(BuildContext context) {
-    final s      = widget.sighting;
-    final iscat  = s.animalType == 'cat';
-    final color  = iscat
-      ? const Color(0xFFef6c00)
-      : const Color(0xFF795548);
-    final isNew  = s.isNewIndividual;
+    final s     = widget.sighting;
+    final iscat = s.animalType == 'cat';
+    final color = iscat
+        ? const Color(0xFFef6c00)
+        : const Color(0xFF795548);
+    final isNew = s.isNewIndividual;
 
     return Container(
       decoration: const BoxDecoration(
@@ -436,14 +623,13 @@ class _SightingDetailModalState extends State<_SightingDetailModal> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-
           if (s.imageUrl.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               child: Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                     child: CachedNetworkImage(
                       imageUrl: s.imageUrl,
                       height: 200, width: double.infinity,
@@ -451,21 +637,21 @@ class _SightingDetailModalState extends State<_SightingDetailModal> {
                       placeholder: (_, __) => Container(
                         height: 200, color: const Color(0xFFe8f5e9),
                         child: const Center(
-                          child: CircularProgressIndicator())),
+                            child: CircularProgressIndicator())),
                       errorWidget: (_, __, ___) => Container(
                         height: 200, color: const Color(0xFFe8f5e9),
                         child: const Icon(Icons.pets,
-                          size: 60, color: Color(0xFF2e7d32))),
+                            size: 60, color: Color(0xFF2e7d32))),
                     ),
                   ),
                   Positioned(
                     top: 10, right: 10,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
+                          horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.88),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(100),
                       ),
                       child: Text(
                         isNew ? 'NEW' : 'KNOWN',
@@ -473,8 +659,8 @@ class _SightingDetailModalState extends State<_SightingDetailModal> {
                           fontSize: 9,
                           fontWeight: FontWeight.w700,
                           color: isNew
-                            ? const Color(0xFFe65100)
-                            : const Color(0xFF2e7d32),
+                              ? const Color(0xFFe65100)
+                              : const Color(0xFF2e7d32),
                         ),
                       ),
                     ),
@@ -482,32 +668,29 @@ class _SightingDetailModalState extends State<_SightingDetailModal> {
                 ],
               ),
             ),
-
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(_nickname,
-                  style: const TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.w700,
-                    color: Color(0xFF1a1a1a))),
+                    style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w700,
+                      color: Color(0xFF1a1a1a))),
                 const SizedBox(height: 4),
                 Row(
                   children: [
                     Icon(Icons.pets, size: 13, color: color),
                     const SizedBox(width: 4),
                     Text(s.animalType.toUpperCase(),
-                      style: TextStyle(
-                        color: color, fontWeight: FontWeight.w700,
-                        fontSize: 11)),
+                        style: TextStyle(
+                          color: color,
+                          fontWeight: FontWeight.w700, fontSize: 11)),
                   ],
                 ),
                 const SizedBox(height: 12),
                 const Divider(height: 1, thickness: 0.5),
                 const SizedBox(height: 12),
-
-                // Info grid
                 if (_characteristics.isNotEmpty) ...[
                   Row(
                     children: [
@@ -521,7 +704,8 @@ class _SightingDetailModalState extends State<_SightingDetailModal> {
                       Expanded(
                         child: _InfoTile(
                           label: 'Confidence',
-                          value: '${(s.confidence * 100).toStringAsFixed(1)}%',
+                          value:
+                              '${(s.confidence * 100).toStringAsFixed(1)}%',
                           valueColor: const Color(0xFF2e7d32),
                         ),
                       ),
@@ -537,10 +721,7 @@ class _SightingDetailModalState extends State<_SightingDetailModal> {
                   const SizedBox(height: 8),
                 ],
                 _InfoTile(
-                  label: 'Location',
-                  value: s.locationName,
-                  fullWidth: true,
-                ),
+                  label: 'Location', value: s.locationName, fullWidth: true),
                 const SizedBox(height: 8),
                 _InfoTile(
                   label: 'Sighted',
@@ -549,7 +730,6 @@ class _SightingDetailModalState extends State<_SightingDetailModal> {
                   fullWidth: true,
                 ),
                 const SizedBox(height: 20),
-
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -557,18 +737,18 @@ class _SightingDetailModalState extends State<_SightingDetailModal> {
                       ? const SizedBox(
                           width: 18, height: 18,
                           child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
+                              strokeWidth: 2, color: Colors.white))
                       : const Icon(Icons.map, size: 18),
                     label: Text(_loadingMap
-                      ? 'Loading...'
-                      : 'View $_nickname\'s Locations on Map'),
+                        ? 'Loading...'
+                        : 'View $_nickname\'s Locations on Map'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2e7d32),
                       foregroundColor: Colors.white,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                        borderRadius: BorderRadius.circular(100)),
                     ),
                     onPressed: _loadingMap ? null : _openIndividualHeatmap,
                   ),
@@ -602,22 +782,22 @@ class _InfoTile extends StatelessWidget {
       width: fullWidth ? double.infinity : null,
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: const Color(0xFFFAFAFA),
-        borderRadius: BorderRadius.circular(8),
+        color: const Color(0xFFF6F4F1),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label,
-            style: const TextStyle(
-              fontSize: 10, color: Color(0xFF888888))),
+              style: const TextStyle(
+                  fontSize: 10, color: Color(0xFF888888))),
           const SizedBox(height: 3),
           Text(value,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: valueColor ?? const Color(0xFF1a1a1a),
-            )),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: valueColor ?? const Color(0xFF1a1a1a),
+              )),
         ],
       ),
     );

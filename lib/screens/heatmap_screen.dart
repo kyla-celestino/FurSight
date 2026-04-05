@@ -222,38 +222,73 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF0EDE8),
       appBar: AppBar(
-        title: Text(
-          _isIndividualMode
-            ? "${widget.individualNickname}'s Locations"
-            : 'Heatmap',
-        ),
+        backgroundColor: const Color(0xFFF0EDE8),
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        automaticallyImplyLeading: !_isIndividualMode ? false : true,
+        foregroundColor: const Color(0xFF1b5e20),
+        title: _isIndividualMode
+          ? Text(
+              "${widget.individualNickname ?? 'Animal'}'s Locations",
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF1a1a1a),
+              ),
+            )
+          : const Row(
+              children: [
+                Icon(Icons.pets, color: Color(0xFF1b5e20), size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'FurFinder',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1b5e20),
+                  ),
+                ),
+              ],
+            ),
         actions: [
           if (!_isIndividualMode)
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: DropdownButton<String>(
                 value: _filter,
-                dropdownColor: const Color(0xFF4CAF50),
+                dropdownColor: Colors.white,
                 underline: const SizedBox(),
-                icon: const Icon(Icons.filter_list, color: Colors.white),
+                icon: const Icon(Icons.filter_list,
+                    color: Color(0xFF2e7d32)),
                 items: const [
                   DropdownMenuItem(value: 'all',
-                    child: Text('All', style: TextStyle(color: Colors.white))),
+                    child: Text('All',
+                        style: TextStyle(color: Color(0xFF1a1a1a)))),
                   DropdownMenuItem(value: 'cat',
-                    child: Text('🐱 Cats', style: TextStyle(color: Colors.white))),
+                    child: Text('🐱 Cats',
+                        style: TextStyle(color: Color(0xFF1a1a1a)))),
                   DropdownMenuItem(value: 'dog',
-                    child: Text('🐶 Dogs', style: TextStyle(color: Colors.white))),
+                    child: Text('🐶 Dogs',
+                        style: TextStyle(color: Color(0xFF1a1a1a)))),
                 ],
                 onChanged: (val) {
                   if (val == null) return;
                   setState(() {
                     _filter    = val;
                     _isLoading = true;
-                    _webController.loadHtmlString(_buildHeatmapHtml(_lastSightings));
+                    _webController.loadHtmlString(
+                        _buildHeatmapHtml(_lastSightings));
                   });
                 },
               ),
+            ),
+          if (!_isIndividualMode)
+            const Padding(
+              padding: EdgeInsets.only(right: 12),
+              child: Icon(Icons.notifications_outlined,
+                  color: Color(0xFF777777), size: 22),
             ),
         ],
       ),

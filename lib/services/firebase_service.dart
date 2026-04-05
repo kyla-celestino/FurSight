@@ -212,12 +212,16 @@ class FirebaseService {
   }
 
   Stream<List<AnimalSighting>> getSightingsStream({String? animalType}) {
-    Query query = _sightings.orderBy('timestamp', descending: true);
-    if (animalType != null) {
-      query = query.where('animalType', isEqualTo: animalType);
-    }
-    return query.snapshots().map((snap) =>
-        snap.docs.map((doc) => AnimalSighting.fromFirestore(doc)).toList());
+    return _sightings
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((snap) {
+          final all = snap.docs
+              .map((doc) => AnimalSighting.fromFirestore(doc))
+              .toList();
+          if (animalType == null) return all;
+          return all.where((s) => s.animalType == animalType).toList();
+        });
   }
 
   Stream<List<AnimalSighting>> getUserSightings(String userId) {

@@ -52,100 +52,127 @@ class HotlinesScreen extends StatelessWidget {
     }
   }
 
-  // Returns [bgColor, iconColor]
   List<Color> _getTint(String iconName) {
     switch (iconName) {
       case 'emergency':
-        return [const Color(0xFFfce4ec), const Color(0xFFc62828)];
+        return [const Color(0xFFFCEDE8), const Color(0xFFc62828)];
       case 'security':
-        return [const Color(0xFFe3f2fd), const Color(0xFF1565c0)];
+        return [const Color(0xFFE3F2FD), const Color(0xFF1565c0)];
       case 'health':
-        return [const Color(0xFFe8f5e9), const Color(0xFF2e7d32)];
+        return [const Color(0xFFE8F5E9), const Color(0xFF2e7d32)];
       case 'business':
-        return [const Color(0xFFede7f6), const Color(0xFF6a1b9a)];
-      default: // pets → amber
-        return [const Color(0xFFfff8e1), const Color(0xFFe65100)];
+        return [const Color(0xFFEDE7F6), const Color(0xFF6a1b9a)];
+      default:
+        return [const Color(0xFFFFF8E1), const Color(0xFFe65100)];
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
-      appBar: AppBar(title: const Text('Emergency Hotlines')),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _hotlines.length,
-        itemBuilder: (context, index) {
-          final hotline = _hotlines[index];
-          final tint    = _getTint(hotline['icon']!);
-          final bgColor   = tint[0];
-          final iconColor = tint[1];
-
-          return Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: const Color(0xFFe0e0e0), width: 0.5),
+      backgroundColor: const Color(0xFFF0EDE8),
+      appBar: AppBar(
+        title: const Text('Emergency Hotlines'),
+        backgroundColor: const Color(0xFFF0EDE8),
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        foregroundColor: const Color(0xFF1a1a1a),
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(20, 4, 20, 16),
+            child: Text(
+              'Reach out to these organizations\nfor urgent animal-related help.',
+              style: TextStyle(
+                fontSize: 13,
+                color: Color(0xFF888888),
+                height: 1.4,
+              ),
             ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14, vertical: 12),
-              child: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: bgColor,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(
-                      _getIcon(hotline['icon']!),
-                      color: iconColor,
-                      size: 18,
-                    ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+              itemCount: _hotlines.length,
+              itemBuilder: (context, index) {
+                final hotline   = _hotlines[index];
+                final tint      = _getTint(hotline['icon']!);
+                final bgColor   = tint[0];
+                final iconColor = tint[1];
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x0F000000),
+                        blurRadius: 8, offset: Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
+                    child: Row(
                       children: [
-                        Text(
-                          hotline['name']!,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1a1a1a),
+                        Container(
+                          width: 42, height: 42,
+                          decoration: BoxDecoration(
+                            color: bgColor,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Icon(
+                            _getIcon(hotline['icon']!),
+                            color: iconColor, size: 20,
                           ),
                         ),
-                        const SizedBox(height: 1),
-                        Text(
-                          hotline['description']!,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: Color(0xFF888888),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                hotline['name']!,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF1a1a1a),
+                                ),
+                              ),
+                              const SizedBox(height: 1),
+                              Text(
+                                hotline['description']!,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFF888888),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                hotline['number']!,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: iconColor,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 3),
-                        Text(
-                          hotline['number']!,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: iconColor,
-                          ),
-                        ),
+                        Icon(Icons.call_outlined,
+                            size: 18, color: iconColor),
                       ],
                     ),
                   ),
-                ],
-              ),
+                );
+              },
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
