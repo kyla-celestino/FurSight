@@ -44,7 +44,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ── Image Search ──────────────────────────────────────────
   Future<void> _startImageSearch() async {
-    // Show picker options
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       builder: (_) => SafeArea(
@@ -84,7 +83,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     if (picked == null || !mounted) return;
 
-    // Show loading dialog
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -104,12 +102,11 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final imageFile = File(picked.path);
 
-      // Step 1: Detect animal
       final detection = await _aiService.detectAnimal(imageFile);
       if (!mounted) return;
 
       if (detection == null) {
-        Navigator.pop(context); // close loading
+        Navigator.pop(context);
         _showImageSearchError(
           'No animal detected',
           'Make sure a cat or dog is clearly visible in the photo.',
@@ -117,15 +114,12 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
 
-      // Step 2: Get embedding
       final embedding = await _aiService.getEmbedding(detection.croppedImage);
-
-      // Step 3: Load all embeddings from Firestore
       final allEmbeddings = await _firebaseService.getAllEmbeddings();
 
       if (allEmbeddings.isEmpty) {
         if (!mounted) return;
-        Navigator.pop(context); // close loading
+        Navigator.pop(context);
         _showImageSearchError(
           'No animals in database',
           'No animals have been submitted yet. Be the first to report a sighting!',
@@ -133,7 +127,6 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
 
-      // Step 4: Find top matches
       final topMatches = _aiService.findTopMatches(
         embedding,
         allEmbeddings,
@@ -141,12 +134,11 @@ class _HomeScreenState extends State<HomeScreen> {
         minSimilarity: 0.30,
       );
 
-      // Step 5: Fetch individual details for matches
       final ids = topMatches.map((m) => m['individualId'] as String).toList();
       final individuals = await _firebaseService.getIndividualsByIds(ids);
 
       if (!mounted) return;
-      Navigator.pop(context); // close loading
+      Navigator.pop(context);
 
       if (topMatches.isEmpty || individuals.isEmpty) {
         _showImageSearchError(
@@ -156,7 +148,6 @@ class _HomeScreenState extends State<HomeScreen> {
         return;
       }
 
-      // Step 6: Show results
       _showImageSearchResults(
         imageFile: imageFile,
         animalType: detection.animalType,
@@ -165,7 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      Navigator.pop(context); // close loading
+      Navigator.pop(context);
       _showImageSearchError('Error', e.toString());
     }
   }
@@ -192,7 +183,6 @@ class _HomeScreenState extends State<HomeScreen> {
     required List<Map<String, dynamic>> matches,
     required List<AnimalIndividual> individuals,
   }) {
-    // Build a map for quick lookup: id -> individual
     final indMap = {for (final ind in individuals) ind.id: ind};
 
     showModalBottomSheet(
@@ -204,8 +194,8 @@ class _HomeScreenState extends State<HomeScreen> {
         initialChildSize: 0.75,
         minChildSize: 0.5,
         maxChildSize: 0.95,
-        snap: true,                          // ← snaps to positions
-        snapSizes: const [0.5, 0.75, 0.95], // ← snap points
+        snap: true,
+        snapSizes: const [0.5, 0.75, 0.95],
         builder: (_, scrollController) => Container(
           decoration: const BoxDecoration(
             color: Colors.white,
@@ -213,7 +203,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           child: Column(
             children: [
-              // ── Drag handle — connected to scroll controller ──
               GestureDetector(
                 onVerticalDragUpdate: (details) {
                   scrollController.position.moveTo(
@@ -236,7 +225,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-              // Header
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
                 child: Row(
@@ -257,12 +245,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           const Text(
                             'Image Search Results',
                             style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16),
+                              fontWeight: FontWeight.w700, fontSize: 16,
+                              color: Color(0xFF1a1a1a)),
                           ),
                           Text(
                             '${matches.length} match${matches.length == 1 ? '' : 'es'} found',
-                            style: TextStyle(
-                              color: Colors.grey[600], fontSize: 13),
+                            style: const TextStyle(
+                              color: Color(0xFF888888), fontSize: 13),
                           ),
                         ],
                       ),
@@ -272,7 +261,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               const Divider(height: 1),
 
-              // Results list
               Expanded(
                 child: ListView.builder(
                   controller: scrollController,
@@ -304,16 +292,16 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    final username = user?.email?.split('@').first ?? 'User';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: const Color(0xFFFAFAFA),
       appBar: AppBar(
         title: const Row(
           children: [
-            Icon(Icons.pets, color: Colors.white),
+            Icon(Icons.pets, color: Colors.white, size: 20),
             SizedBox(width: 8),
-            Text('FurFinder',
-              style: TextStyle(fontWeight: FontWeight.bold)),
+            Text('FurFinder'),
           ],
         ),
         actions: [
@@ -328,167 +316,209 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 16),
-
-            // Welcome
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+            // ── Green hero section ────────────────────────
+            Container(
+              width: double.infinity,
+              color: const Color(0xFF2e7d32),
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Hello, ${user?.email?.split('@').first ?? 'User'}! 👋',
+                    'Hello, $username!',
                     style: const TextStyle(
-                      fontSize: 20, fontWeight: FontWeight.bold),
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
                   ),
+                  const SizedBox(height: 2),
                   const Text(
                     'Help track campus animals',
-                    style: TextStyle(color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white70,
+                    ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-            // ── Search bar + Image search icon ────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const SearchScreen()),
-                      ),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey[300]!),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.search, color: Colors.grey[500]),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Search animals...',
-                              style: TextStyle(
-                                color: Colors.grey[500], fontSize: 13),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: _startImageSearch,
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey[300]!),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
+                  // ── Search row ──────────────────────────
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SearchScreen()),
                           ),
-                        ],
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.search,
+                                  color: Colors.white, size: 18),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Search animals...',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.75),
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.image_search,
-                        color: Color(0xFF4CAF50),
-                        size: 24,
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: _startImageSearch,
+                        child: Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.image_search,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),
             ),
+
             const SizedBox(height: 20),
 
-            // Quick Access label
+            // ── Section label ─────────────────────────────
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text('Quick Access',
+              child: Text(
+                'QUICK ACCESS',
                 style: TextStyle(
-                  fontSize: 18, fontWeight: FontWeight.bold)),
-            ),
-            const SizedBox(height: 12),
-
-            // ── Community Sightings list tile ─────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-                child: ListTile(
-                  leading: const Icon(Icons.people_outline,
-                    color: Color(0xFF9C27B0)),
-                  title: const Text('Community Sightings',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text('See all sightings from everyone'),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () => Navigator.push(context,
-                    MaterialPageRoute(
-                      builder: (_) => const CommunityScreen())),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF888888),
+                  letterSpacing: 0.8,
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
-            // ── Top 2 cards (Spot + Heatmap) ──────────────
+            // ── Community Sightings tile ──────────────────
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: GestureDetector(
+                onTap: () => Navigator.push(context,
+                  MaterialPageRoute(
+                    builder: (_) => const CommunityScreen())),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFe8f5e9),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFc8e6c9), width: 0.5),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2e7d32).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.people_outline,
+                          color: Color(0xFF2e7d32),
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Community Sightings',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1a1a1a),
+                              )),
+                            SizedBox(height: 1),
+                            Text('See all sightings from everyone',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF555555),
+                              )),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios,
+                        size: 14, color: Color(0xFF2e7d32)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // ── Quick Access 2×2 grid ─────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: GridView.count(
                 crossAxisCount: 2,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.1,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: 1.4,
                 children: [
-                  _QuickAccessCard(
+                  _QuickAccessTile(
                     icon: Icons.add_a_photo,
                     label: 'Spot/Take\na Photo',
-                    color: const Color(0xFF4CAF50),
+                    bgColor: const Color(0xFFe8f5e9),
+                    iconColor: const Color(0xFF2e7d32),
                     onTap: () => Navigator.push(context,
                       MaterialPageRoute(
                         builder: (_) => const SubmitScreen())),
                   ),
-                  _QuickAccessCard(
+                  _QuickAccessTile(
                     icon: Icons.map,
                     label: 'View\nHeatmap',
-                    color: const Color(0xFF2196F3),
+                    bgColor: const Color(0xFFe3f2fd),
+                    iconColor: const Color(0xFF1565c0),
                     onTap: () => Navigator.push(context,
                       MaterialPageRoute(
                         builder: (_) => const HeatmapScreen())),
                   ),
-                  _QuickAccessCard(
+                  _QuickAccessTile(
                     icon: Icons.assignment,
                     label: 'Submission\nLogs',
-                    color: const Color(0xFFFF9800),
+                    bgColor: const Color(0xFFfff8e1),
+                    iconColor: const Color(0xFFe65100),
                     onTap: () => Navigator.push(context,
                       MaterialPageRoute(
                         builder: (_) => const LogsScreen())),
                   ),
-                  _QuickAccessCard(
+                  _QuickAccessTile(
                     icon: Icons.emergency,
                     label: 'Emergency\nHotlines',
-                    color: const Color(0xFFF44336),
+                    bgColor: const Color(0xFFfce4ec),
+                    iconColor: const Color(0xFFb71c1c),
                     onTap: () => Navigator.push(context,
                       MaterialPageRoute(
                         builder: (_) => const HotlinesScreen())),
@@ -496,28 +526,118 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
-            // ── How it works ──────────────────────────────
+            // ── How it works tile ─────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-                child: ListTile(
-                  leading: const Icon(Icons.help_outline,
-                    color: Color(0xFF4CAF50)),
-                  title: const Text('How it works?',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text('Learn how to use FurFinder'),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () => Navigator.push(context,
-                    MaterialPageRoute(
-                      builder: (_) => const HowItWorksScreen())),
+              child: GestureDetector(
+                onTap: () => Navigator.push(context,
+                  MaterialPageRoute(
+                    builder: (_) => const HowItWorksScreen())),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFe0e0e0), width: 0.5),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF4F4F4),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.help_outline,
+                          color: Color(0xFF888888),
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('How it works?',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1a1a1a),
+                              )),
+                            SizedBox(height: 1),
+                            Text('Learn how to use FurFinder',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF888888),
+                              )),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios,
+                        size: 14, color: Color(0xFF888888)),
+                    ],
+                  ),
                 ),
               ),
             ),
             const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Quick Access Tile ─────────────────────────────────────────
+class _QuickAccessTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color bgColor;
+  final Color iconColor;
+  final VoidCallback onTap;
+
+  const _QuickAccessTile({
+    required this.icon,
+    required this.label,
+    required this.bgColor,
+    required this.iconColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: iconColor.withValues(alpha: 0.25),
+            width: 0.5,
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 20, color: iconColor),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: iconColor,
+                height: 1.3,
+              ),
+            ),
           ],
         ),
       ),
@@ -566,24 +686,29 @@ class _ImageSearchResultCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final iscat = individual.animalType == 'cat';
-    final color = iscat ? Colors.orange : Colors.brown;
+    final typeColor = iscat
+      ? const Color(0xFFef6c00)
+      : const Color(0xFF795548);
 
     return GestureDetector(
       onTap: () => _showDetailModal(context),
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFe0e0e0), width: 0.5),
+        ),
         child: Row(
           children: [
             // Photo
             ClipRRect(
               borderRadius: const BorderRadius.horizontal(
-                left: Radius.circular(16)),
+                left: Radius.circular(12)),
               child: individual.latestImageUrl.isNotEmpty
                 ? CachedNetworkImage(
                     imageUrl: individual.latestImageUrl,
-                    width: 90, height: 90, fit: BoxFit.cover,
+                    width: 54, height: 54, fit: BoxFit.cover,
                     placeholder: (_, __) => _PlaceholderBox(),
                     errorWidget: (_, __, ___) => _PlaceholderBox(),
                   )
@@ -593,36 +718,36 @@ class _ImageSearchResultCard extends StatelessWidget {
             // Details
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10, vertical: 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.pets, size: 14, color: color),
-                        const SizedBox(width: 4),
+                        Icon(Icons.pets, size: 11, color: typeColor),
+                        const SizedBox(width: 3),
                         Text(
                           individual.animalType.toUpperCase(),
                           style: TextStyle(
-                            color: color,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 11,
+                            color: typeColor,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 9,
                           ),
                         ),
                         const Spacer(),
-                        // Similarity badge
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
+                            horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: _matchColor.withOpacity(0.1),
+                            color: _matchColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
                             '${(similarity * 100).toStringAsFixed(0)}%',
                             style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
                               color: _matchColor,
                             ),
                           ),
@@ -634,20 +759,23 @@ class _ImageSearchResultCard extends StatelessWidget {
                       individual.nickname.isNotEmpty
                         ? individual.nickname : 'Unnamed',
                       style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 15),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: Color(0xFF1a1a1a),
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       _matchLabel,
                       style: TextStyle(
-                        fontSize: 11, color: _matchColor),
+                        fontSize: 10, color: _matchColor),
                     ),
                     if (individual.characteristics.isNotEmpty) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
                         individual.characteristics,
                         style: const TextStyle(
-                          fontSize: 11, color: Colors.grey),
+                          fontSize: 10, color: Color(0xFF888888)),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -659,7 +787,7 @@ class _ImageSearchResultCard extends StatelessWidget {
             const Padding(
               padding: EdgeInsets.only(right: 8),
               child: Icon(Icons.chevron_right,
-                color: Colors.grey, size: 20),
+                color: Color(0xFF888888), size: 18),
             ),
           ],
         ),
@@ -672,14 +800,14 @@ class _PlaceholderBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 90, height: 90,
-      color: Colors.grey[200],
-      child: const Icon(Icons.pets, color: Colors.grey),
+      width: 54, height: 54,
+      color: const Color(0xFFe8f5e9),
+      child: const Icon(Icons.pets, color: Color(0xFF2e7d32), size: 22),
     );
   }
 }
 
-// ── Individual detail modal (reused from search_screen) ───────
+// ── Individual detail modal ───────────────────────────────────
 class _IndividualDetailModal extends StatefulWidget {
   final AnimalIndividual individual;
   final FirebaseService  firebaseService;
@@ -718,9 +846,11 @@ class _IndividualDetailModalState extends State<_IndividualDetailModal> {
 
   @override
   Widget build(BuildContext context) {
-    final ind   = widget.individual;
-    final iscat = ind.animalType == 'cat';
-    final color = iscat ? Colors.orange : Colors.brown;
+    final ind    = widget.individual;
+    final iscat  = ind.animalType == 'cat';
+    final color  = iscat
+      ? const Color(0xFFef6c00)
+      : const Color(0xFF795548);
 
     return Container(
       decoration: const BoxDecoration(
@@ -742,60 +872,98 @@ class _IndividualDetailModalState extends State<_IndividualDetailModal> {
           if (ind.latestImageUrl.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: CachedNetworkImage(
-                  imageUrl: ind.latestImageUrl,
-                  height: 220, width: double.infinity,
-                  fit: BoxFit.cover,
-                  placeholder: (_, __) => Container(
-                    height: 220, color: Colors.grey[200],
-                    child: const Center(
-                      child: CircularProgressIndicator())),
-                  errorWidget: (_, __, ___) => Container(
-                    height: 220, color: Colors.grey[200],
-                    child: const Icon(Icons.pets,
-                      size: 60, color: Colors.grey)),
-                ),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: CachedNetworkImage(
+                      imageUrl: ind.latestImageUrl,
+                      height: 200, width: double.infinity,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => Container(
+                        height: 200, color: const Color(0xFFe8f5e9),
+                        child: const Center(
+                          child: CircularProgressIndicator())),
+                      errorWidget: (_, __, ___) => Container(
+                        height: 200, color: const Color(0xFFe8f5e9),
+                        child: const Icon(Icons.pets,
+                          size: 60, color: Color(0xFF2e7d32))),
+                    ),
+                  ),
+                  Positioned(
+                    top: 10, right: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.88),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'KNOWN',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF2e7d32),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
 
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   ind.nickname.isNotEmpty ? ind.nickname : 'Unnamed',
                   style: const TextStyle(
-                    fontSize: 22, fontWeight: FontWeight.bold)),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1a1a1a),
+                  ),
+                ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Icon(Icons.pets, size: 14, color: color),
+                    Icon(Icons.pets, size: 13, color: color),
                     const SizedBox(width: 4),
-                    Text(ind.animalType.toUpperCase(),
+                    Text(
+                      ind.animalType.toUpperCase(),
                       style: TextStyle(
-                        color: color, fontWeight: FontWeight.w600,
-                        fontSize: 13)),
+                        color: color,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                const Divider(),
-                const SizedBox(height: 8),
+                const Divider(height: 1, thickness: 0.5),
+                const SizedBox(height: 12),
 
-                if (ind.characteristics.isNotEmpty) ...[
-                  _InfoRow(
-                    icon: Icons.info_outline,
-                    label: 'Characteristics',
-                    value: ind.characteristics,
-                  ),
-                  const SizedBox(height: 8),
-                ],
-                _InfoRow(
-                  icon: Icons.remove_red_eye_outlined,
-                  label: 'Total Sightings',
-                  value: '${ind.sightingCount} time${ind.sightingCount == 1 ? '' : 's'}',
+                // Info grid
+                Row(
+                  children: [
+                    if (ind.characteristics.isNotEmpty) ...[
+                      Expanded(
+                        child: _InfoTile(
+                          label: 'Characteristics',
+                          value: ind.characteristics,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Expanded(
+                      child: _InfoTile(
+                        label: 'Total Sightings',
+                        value: '${ind.sightingCount} time${ind.sightingCount == 1 ? '' : 's'}',
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 20),
 
@@ -807,11 +975,14 @@ class _IndividualDetailModalState extends State<_IndividualDetailModal> {
                           width: 18, height: 18,
                           child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.map),
+                      : const Icon(Icons.map, size: 18),
                     label: Text(_loadingMap
                       ? 'Loading...'
                       : "View ${ind.nickname.isNotEmpty ? ind.nickname : 'Animal'}'s Locations on Map"),
                     style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2e7d32),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
@@ -829,115 +1000,37 @@ class _IndividualDetailModalState extends State<_IndividualDetailModal> {
   }
 }
 
-class _InfoRow extends StatelessWidget {
-  final IconData icon;
+class _InfoTile extends StatelessWidget {
   final String label;
   final String value;
 
-  const _InfoRow({
-    required this.icon,
+  const _InfoTile({
     required this.label,
     required this.value,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 16, color: Colors.grey),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label,
-                style: const TextStyle(fontSize: 11, color: Colors.grey)),
-              Text(value,
-                style: const TextStyle(
-                  fontSize: 13, color: Colors.black87)),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ── Existing home screen widgets ──────────────────────────────
-class _EmergencyBanner extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      color: const Color(0xFFF44336),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        children: [
-          const Icon(Icons.emergency, color: Colors.white, size: 20),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: Text('In Emergency call 119',
-              style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const HotlinesScreen())),
-            child: const Text('See all',
-              style: TextStyle(color: Colors.white70, fontSize: 12)),
-          ),
-        ],
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFAFAFA),
+        borderRadius: BorderRadius.circular(8),
       ),
-    );
-  }
-}
-
-class _QuickAccessCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  const _QuickAccessCard({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16)),
-        elevation: 3,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [color, color.withOpacity(0.7)],
-            ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 40, color: Colors.white),
-              const SizedBox(height: 8),
-              Text(label,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                )),
-            ],
-          ),
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+            style: const TextStyle(
+              fontSize: 10, color: Color(0xFF888888))),
+          const SizedBox(height: 3),
+          Text(value,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF1a1a1a),
+            )),
+        ],
       ),
     );
   }

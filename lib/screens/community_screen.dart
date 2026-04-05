@@ -19,49 +19,44 @@ class _CommunityScreenState extends State<CommunityScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFAFAFA),
       appBar: AppBar(title: const Text('Community Sightings')),
       body: Column(
         children: [
-          // ── Filter dropdown ───────────────────────────────
+          // ── Filter row ────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Row(
               children: [
                 const Text(
-                  'All sightings from the community',
-                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                  'All community sightings',
+                  style: TextStyle(
+                    color: Color(0xFF888888), fontSize: 12),
                 ),
                 const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.grey[300]!),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _filter,
-                      isDense: true,
-                      icon: const Icon(Icons.filter_list, size: 18),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'all',
-                          child: Text('All',
-                            style: TextStyle(fontSize: 13))),
-                        DropdownMenuItem(
-                          value: 'cat',
-                          child: Text('🐱 Cats',
-                            style: TextStyle(fontSize: 13))),
-                        DropdownMenuItem(
-                          value: 'dog',
-                          child: Text('🐶 Dogs',
-                            style: TextStyle(fontSize: 13))),
+                GestureDetector(
+                  onTap: () => _showFilterSheet(context),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: const Color(0xFFe0e0e0), width: 0.5),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.filter_list,
+                          size: 16, color: Color(0xFF555555)),
+                        const SizedBox(width: 6),
+                        Text(
+                          _filterLabel,
+                          style: const TextStyle(
+                            fontSize: 12, color: Color(0xFF555555)),
+                        ),
                       ],
-                      onChanged: (val) {
-                        if (val != null) setState(() => _filter = val);
-                      },
                     ),
                   ),
                 ),
@@ -87,7 +82,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.pets, size: 64, color: Colors.grey[300]),
+                        const Icon(Icons.pets, size: 64,
+                          color: Color(0xFFc8e6c9)),
                         const SizedBox(height: 16),
                         Text(
                           'No community sightings yet',
@@ -105,7 +101,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  padding: const EdgeInsets.only(bottom: 16),
                   itemCount: sightings.length,
                   itemBuilder: (context, index) {
                     return _CommunitySightingCard(
@@ -118,6 +114,59 @@ class _CommunityScreenState extends State<CommunityScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  String get _filterLabel {
+    switch (_filter) {
+      case 'cat': return 'Cats';
+      case 'dog': return 'Dogs';
+      default:    return 'All';
+    }
+  }
+
+  void _showFilterSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            ListTile(
+              title: const Text('All'),
+              trailing: _filter == 'all'
+                ? const Icon(Icons.check, color: Color(0xFF2e7d32))
+                : null,
+              onTap: () {
+                setState(() => _filter = 'all');
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              title: const Text('Cats'),
+              trailing: _filter == 'cat'
+                ? const Icon(Icons.check, color: Color(0xFF2e7d32))
+                : null,
+              onTap: () {
+                setState(() => _filter = 'cat');
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              title: const Text('Dogs'),
+              trailing: _filter == 'dog'
+                ? const Icon(Icons.check, color: Color(0xFF2e7d32))
+                : null,
+              onTap: () {
+                setState(() => _filter = 'dog');
+                Navigator.pop(context);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
   }
@@ -146,22 +195,31 @@ class _CommunitySightingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final iscat     = sighting.animalType == 'cat';
+    final typeColor = iscat
+      ? const Color(0xFFef6c00)
+      : const Color(0xFF795548);
+    final isNew     = sighting.isNewIndividual;
+
     return GestureDetector(
       onTap: () => _showDetailModal(context),
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFe0e0e0), width: 0.5),
+        ),
         child: Row(
           children: [
-            // Photo
+            // Thumbnail
             ClipRRect(
               borderRadius: const BorderRadius.horizontal(
-                left: Radius.circular(16)),
+                left: Radius.circular(12)),
               child: sighting.imageUrl.isNotEmpty
                 ? CachedNetworkImage(
                     imageUrl: sighting.imageUrl,
-                    width: 90, height: 90, fit: BoxFit.cover,
+                    width: 54, height: 54, fit: BoxFit.cover,
                     placeholder: (_, __) => _PlaceholderBox(),
                     errorWidget: (_, __, ___) => _PlaceholderBox(),
                   )
@@ -171,82 +229,78 @@ class _CommunitySightingCard extends StatelessWidget {
             // Details
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10, vertical: 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Type + badge
                     Row(
                       children: [
-                        Icon(Icons.pets, size: 16,
-                          color: sighting.animalType == 'cat'
-                            ? Colors.orange : Colors.brown),
-                        const SizedBox(width: 4),
-                        Text(sighting.animalType.toUpperCase(),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 13)),
+                        Icon(Icons.pets, size: 11, color: typeColor),
+                        const SizedBox(width: 3),
+                        Text(
+                          sighting.animalType.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: typeColor,
+                          ),
+                        ),
                         const Spacer(),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
+                            horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: sighting.isNewIndividual
-                              ? Colors.orange[100] : Colors.green[100],
-                            borderRadius: BorderRadius.circular(10),
+                            color: isNew
+                              ? const Color(0xFFfff8e1)
+                              : const Color(0xFFe8f5e9),
+                            borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            sighting.isNewIndividual ? 'NEW' : 'KNOWN',
+                            isNew ? 'NEW' : 'KNOWN',
                             style: TextStyle(
-                              fontSize: 10, fontWeight: FontWeight.bold,
-                              color: sighting.isNewIndividual
-                                ? Colors.orange[800] : Colors.green[800],
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: isNew
+                                ? const Color(0xFFe65100)
+                                : const Color(0xFF2e7d32),
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
 
-                    // Nickname
+                    // Name
                     FutureBuilder<String>(
                       future: firebaseService
                           .getNickname(sighting.individualId),
                       builder: (context, snap) {
                         final name = snap.data ?? '...';
-                        return Row(
-                          children: [
-                            const Icon(Icons.badge_outlined,
-                              size: 12, color: Colors.grey),
-                            const SizedBox(width: 2),
-                            Text(name,
-                              style: const TextStyle(
-                                fontSize: 12, fontWeight: FontWeight.w600,
-                                color: Colors.black87)),
-                          ],
+                        return Text(
+                          name,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1a1a1a),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         );
                       },
                     ),
-                    const SizedBox(height: 4),
-                    
-                    Row(
-                      children: [
-                        const Icon(Icons.location_on,
-                          size: 12, color: Colors.grey),
-                        const SizedBox(width: 2),
-                        Expanded(
-                          child: Text(sighting.locationName,
-                            style: const TextStyle(
-                              fontSize: 11, color: Colors.grey),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
+
+                    // Meta: location · date
                     Text(
-                      DateFormat('MMM d, yyyy • h:mm a')
-                          .format(sighting.timestamp),
+                      '📍 ${sighting.locationName} · '
+                      '${DateFormat('MMM d, h:mm a').format(sighting.timestamp)}',
                       style: const TextStyle(
-                        fontSize: 11, color: Colors.grey)),
+                        fontSize: 10, color: Color(0xFF888888)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ],
                 ),
               ),
@@ -255,7 +309,7 @@ class _CommunitySightingCard extends StatelessWidget {
             const Padding(
               padding: EdgeInsets.only(right: 8),
               child: Icon(Icons.chevron_right,
-                color: Colors.grey, size: 20),
+                color: Color(0xFF888888), size: 16),
             ),
           ],
         ),
@@ -268,9 +322,9 @@ class _PlaceholderBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 90, height: 90,
-      color: Colors.grey[200],
-      child: const Icon(Icons.pets, color: Colors.grey),
+      width: 54, height: 54,
+      color: const Color(0xFFe8f5e9),
+      child: const Icon(Icons.pets, color: Color(0xFF2e7d32), size: 22),
     );
   }
 }
@@ -336,9 +390,12 @@ class _CommunitySightingDetailModalState
 
   @override
   Widget build(BuildContext context) {
-    final s     = widget.sighting;
-    final iscat = s.animalType == 'cat';
-    final color = iscat ? Colors.orange : Colors.brown;
+    final s      = widget.sighting;
+    final iscat  = s.animalType == 'cat';
+    final color  = iscat
+      ? const Color(0xFFef6c00)
+      : const Color(0xFF795548);
+    final isNew  = s.isNewIndividual;
 
     return Container(
       decoration: const BoxDecoration(
@@ -360,95 +417,113 @@ class _CommunitySightingDetailModalState
           if (s.imageUrl.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: CachedNetworkImage(
-                  imageUrl: s.imageUrl,
-                  height: 220, width: double.infinity,
-                  fit: BoxFit.cover,
-                  placeholder: (_, __) => Container(
-                    height: 220, color: Colors.grey[200],
-                    child: const Center(
-                      child: CircularProgressIndicator())),
-                  errorWidget: (_, __, ___) => Container(
-                    height: 220, color: Colors.grey[200],
-                    child: const Icon(Icons.pets,
-                      size: 60, color: Colors.grey)),
-                ),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: CachedNetworkImage(
+                      imageUrl: s.imageUrl,
+                      height: 200, width: double.infinity,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => Container(
+                        height: 200, color: const Color(0xFFe8f5e9),
+                        child: const Center(
+                          child: CircularProgressIndicator())),
+                      errorWidget: (_, __, ___) => Container(
+                        height: 200, color: const Color(0xFFe8f5e9),
+                        child: const Icon(Icons.pets,
+                          size: 60, color: Color(0xFF2e7d32))),
+                    ),
+                  ),
+                  Positioned(
+                    top: 10, right: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.88),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        isNew ? 'NEW' : 'KNOWN',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: isNew
+                            ? const Color(0xFFe65100)
+                            : const Color(0xFF2e7d32),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
 
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(_nickname,
-                        style: const TextStyle(
-                          fontSize: 22, fontWeight: FontWeight.bold)),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: s.isNewIndividual
-                          ? Colors.orange[100] : Colors.green[100],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        s.isNewIndividual ? 'NEW' : 'KNOWN',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 12,
-                          color: s.isNewIndividual
-                            ? Colors.orange[800] : Colors.green[800],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                Text(_nickname,
+                  style: const TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.w700,
+                    color: Color(0xFF1a1a1a))),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Icon(Icons.pets, size: 14, color: color),
+                    Icon(Icons.pets, size: 13, color: color),
                     const SizedBox(width: 4),
                     Text(s.animalType.toUpperCase(),
                       style: TextStyle(
-                        color: color, fontWeight: FontWeight.w600,
-                        fontSize: 13)),
+                        color: color, fontWeight: FontWeight.w700,
+                        fontSize: 11)),
                   ],
                 ),
                 const SizedBox(height: 12),
-                const Divider(),
-                const SizedBox(height: 8),
+                const Divider(height: 1, thickness: 0.5),
+                const SizedBox(height: 12),
 
+                // Info grid
                 if (_characteristics.isNotEmpty) ...[
-                  _InfoRow(
-                    icon: Icons.info_outline,
-                    label: 'Characteristics',
-                    value: _characteristics,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _InfoTile(
+                          label: 'Characteristics',
+                          value: _characteristics,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _InfoTile(
+                          label: 'Confidence',
+                          value: '${(s.confidence * 100).toStringAsFixed(1)}%',
+                          valueColor: const Color(0xFF2e7d32),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                ] else ...[
+                  _InfoTile(
+                    label: 'Confidence',
+                    value: '${(s.confidence * 100).toStringAsFixed(1)}%',
+                    valueColor: const Color(0xFF2e7d32),
                   ),
                   const SizedBox(height: 8),
                 ],
-                _InfoRow(
-                  icon: Icons.location_on,
+                _InfoTile(
                   label: 'Location',
                   value: s.locationName,
+                  fullWidth: true,
                 ),
                 const SizedBox(height: 8),
-                _InfoRow(
-                  icon: Icons.access_time,
+                _InfoTile(
                   label: 'Sighted',
                   value: DateFormat('MMM d, yyyy • h:mm a')
                       .format(s.timestamp),
-                ),
-                const SizedBox(height: 8),
-                _InfoRow(
-                  icon: Icons.analytics_outlined,
-                  label: 'Confidence',
-                  value: '${(s.confidence * 100).toStringAsFixed(1)}%',
+                  fullWidth: true,
                 ),
                 const SizedBox(height: 20),
 
@@ -460,11 +535,14 @@ class _CommunitySightingDetailModalState
                           width: 18, height: 18,
                           child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.map),
+                      : const Icon(Icons.map, size: 18),
                     label: Text(_loadingMap
                       ? 'Loading...'
                       : 'View $_nickname\'s Locations on Map'),
                     style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2e7d32),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
@@ -482,37 +560,43 @@ class _CommunitySightingDetailModalState
   }
 }
 
-class _InfoRow extends StatelessWidget {
-  final IconData icon;
+class _InfoTile extends StatelessWidget {
   final String label;
   final String value;
+  final Color? valueColor;
+  final bool   fullWidth;
 
-  const _InfoRow({
-    required this.icon,
+  const _InfoTile({
     required this.label,
     required this.value,
+    this.valueColor,
+    this.fullWidth = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 16, color: Colors.grey),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label,
-                style: const TextStyle(fontSize: 11, color: Colors.grey)),
-              Text(value,
-                style: const TextStyle(
-                  fontSize: 13, color: Colors.black87)),
-            ],
-          ),
-        ),
-      ],
+    return Container(
+      width: fullWidth ? double.infinity : null,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFAFAFA),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+            style: const TextStyle(
+              fontSize: 10, color: Color(0xFF888888))),
+          const SizedBox(height: 3),
+          Text(value,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: valueColor ?? const Color(0xFF1a1a1a),
+            )),
+        ],
+      ),
     );
   }
 }

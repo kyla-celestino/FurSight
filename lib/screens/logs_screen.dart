@@ -22,15 +22,15 @@ class _LogsScreenState extends State<LogsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFAFAFA),
       appBar: AppBar(title: const Text('Submission Logs')),
       body: Column(
         children: [
-          // ── Search bar + Filter dropdown ──────────────────
+          // ── Search bar + Filter ───────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Row(
               children: [
-                // Search bar — navigates to SearchScreen
                 Expanded(
                   child: GestureDetector(
                     onTap: () => Navigator.push(
@@ -40,21 +40,22 @@ class _LogsScreenState extends State<LogsScreen> {
                     ),
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
+                        horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                        color: Colors.grey[100],
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey[300]!),
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: const Color(0xFFe0e0e0), width: 0.5),
                       ),
-                      child: Row(
+                      child: const Row(
                         children: [
                           Icon(Icons.search,
-                            color: Colors.grey[500], size: 20),
-                          const SizedBox(width: 10),
+                            color: Color(0xFF888888), size: 18),
+                          SizedBox(width: 8),
                           Text(
                             'Search animals...',
                             style: TextStyle(
-                              color: Colors.grey[500], fontSize: 13),
+                              color: Color(0xFFbbbbbb), fontSize: 13),
                           ),
                         ],
                       ),
@@ -63,37 +64,29 @@ class _LogsScreenState extends State<LogsScreen> {
                 ),
                 const SizedBox(width: 8),
 
-                // Filter dropdown
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[300]!),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _filter,
-                      isDense: true,
-                      icon: const Icon(Icons.filter_list, size: 18),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'all',
-                          child: Text('All',
-                            style: TextStyle(fontSize: 13))),
-                        DropdownMenuItem(
-                          value: 'cat',
-                          child: Text('🐱 Cats',
-                            style: TextStyle(fontSize: 13))),
-                        DropdownMenuItem(
-                          value: 'dog',
-                          child: Text('🐶 Dogs',
-                            style: TextStyle(fontSize: 13))),
+                GestureDetector(
+                  onTap: () => _showFilterSheet(context),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: const Color(0xFFe0e0e0), width: 0.5),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.filter_list,
+                          size: 16, color: Color(0xFF555555)),
+                        const SizedBox(width: 4),
+                        Text(
+                          _filterLabel,
+                          style: const TextStyle(
+                            fontSize: 12, color: Color(0xFF555555)),
+                        ),
                       ],
-                      onChanged: (val) {
-                        if (val != null) setState(() => _filter = val);
-                      },
                     ),
                   ),
                 ),
@@ -114,7 +107,6 @@ class _LogsScreenState extends State<LogsScreen> {
 
                 final allSightings = snapshot.data ?? [];
 
-                // Filter by animal type using dropdown selection
                 final sightings = _filter == 'all'
                   ? allSightings
                   : allSightings
@@ -126,7 +118,8 @@ class _LogsScreenState extends State<LogsScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.pets, size: 64, color: Colors.grey[300]),
+                        const Icon(Icons.pets, size: 64,
+                          color: Color(0xFFc8e6c9)),
                         const SizedBox(height: 16),
                         Text(
                           allSightings.isEmpty
@@ -148,7 +141,7 @@ class _LogsScreenState extends State<LogsScreen> {
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  padding: const EdgeInsets.only(bottom: 16),
                   itemCount: sightings.length,
                   itemBuilder: (context, index) {
                     return _SightingCard(sighting: sightings[index]);
@@ -158,6 +151,59 @@ class _LogsScreenState extends State<LogsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  String get _filterLabel {
+    switch (_filter) {
+      case 'cat': return 'Cats';
+      case 'dog': return 'Dogs';
+      default:    return 'All';
+    }
+  }
+
+  void _showFilterSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            ListTile(
+              title: const Text('All'),
+              trailing: _filter == 'all'
+                ? const Icon(Icons.check, color: Color(0xFF2e7d32))
+                : null,
+              onTap: () {
+                setState(() => _filter = 'all');
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              title: const Text('Cats'),
+              trailing: _filter == 'cat'
+                ? const Icon(Icons.check, color: Color(0xFF2e7d32))
+                : null,
+              onTap: () {
+                setState(() => _filter = 'cat');
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              title: const Text('Dogs'),
+              trailing: _filter == 'dog'
+                ? const Icon(Icons.check, color: Color(0xFF2e7d32))
+                : null,
+              onTap: () {
+                setState(() => _filter = 'dog');
+                Navigator.pop(context);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
       ),
     );
   }
@@ -178,22 +224,31 @@ class _SightingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final iscat     = sighting.animalType == 'cat';
+    final typeColor = iscat
+      ? const Color(0xFFef6c00)
+      : const Color(0xFF795548);
+    final isNew     = sighting.isNewIndividual;
+
     return GestureDetector(
       onTap: () => _showDetailModal(context),
-      child: Card(
-        margin: const EdgeInsets.only(bottom: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFe0e0e0), width: 0.5),
+        ),
         child: Row(
           children: [
-            // Image
+            // Thumbnail
             ClipRRect(
               borderRadius: const BorderRadius.horizontal(
-                left: Radius.circular(16)),
+                left: Radius.circular(12)),
               child: sighting.imageUrl.isNotEmpty
                 ? CachedNetworkImage(
                     imageUrl: sighting.imageUrl,
-                    width: 90, height: 90, fit: BoxFit.cover,
+                    width: 54, height: 54, fit: BoxFit.cover,
                     placeholder: (_, __) => _PlaceholderBox(),
                     errorWidget: (_, __, ___) => _PlaceholderBox(),
                   )
@@ -203,92 +258,78 @@ class _SightingCard extends StatelessWidget {
             // Details
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10, vertical: 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Name — big and bold on top
+                    // Type + badge
                     Row(
                       children: [
-                        Expanded(
-                          child: FutureBuilder<String>(
-                            future: FirebaseService()
-                                .getNickname(sighting.individualId),
-                            builder: (context, snap) {
-                              final name = snap.data ?? '...';
-                              return Text(
-                                name,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 15),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              );
-                            },
+                        Icon(Icons.pets, size: 11, color: typeColor),
+                        const SizedBox(width: 3),
+                        Text(
+                          sighting.animalType.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: typeColor,
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const Spacer(),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
+                            horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: sighting.isNewIndividual
-                              ? Colors.orange[100] : Colors.green[100],
-                            borderRadius: BorderRadius.circular(10),
+                            color: isNew
+                              ? const Color(0xFFfff8e1)
+                              : const Color(0xFFe8f5e9),
+                            borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
-                            sighting.isNewIndividual ? 'NEW' : 'KNOWN',
+                            isNew ? 'NEW' : 'KNOWN',
                             style: TextStyle(
-                              fontSize: 10, fontWeight: FontWeight.bold,
-                              color: sighting.isNewIndividual
-                                ? Colors.orange[800] : Colors.green[800],
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: isNew
+                                ? const Color(0xFFe65100)
+                                : const Color(0xFF2e7d32),
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
 
-                    // Animal type — smaller below name
-                    Row(
-                      children: [
-                        Icon(Icons.pets, size: 13,
-                          color: sighting.animalType == 'cat'
-                            ? Colors.orange : Colors.brown),
-                        const SizedBox(width: 4),
-                        Text(sighting.animalType.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 11, fontWeight: FontWeight.w600,
-                            color: sighting.animalType == 'cat'
-                              ? Colors.orange : Colors.brown)),
-                      ],
+                    // Name
+                    FutureBuilder<String>(
+                      future: FirebaseService()
+                          .getNickname(sighting.individualId),
+                      builder: (context, snap) {
+                        final name = snap.data ?? '...';
+                        return Text(
+                          name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13,
+                            color: Color(0xFF1a1a1a),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      },
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
 
-                    Row(
-                      children: [
-                        const Icon(Icons.location_on,
-                          size: 12, color: Colors.grey),
-                        const SizedBox(width: 2),
-                        Expanded(
-                          child: Text(sighting.locationName,
-                            style: const TextStyle(
-                              fontSize: 12, color: Colors.grey),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis),
-                        ),
-                      ],
+                    // Meta: location · date
+                    Text(
+                      '📍 ${sighting.locationName} · '
+                      '${DateFormat('MMM d, h:mm a').format(sighting.timestamp)}',
+                      style: const TextStyle(
+                        fontSize: 10, color: Color(0xFF888888)),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      DateFormat('MMM d, yyyy • h:mm a')
-                          .format(sighting.timestamp),
-                      style: const TextStyle(
-                        fontSize: 11, color: Colors.grey)),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Confidence: ${(sighting.confidence * 100).toStringAsFixed(1)}%',
-                      style: const TextStyle(
-                        fontSize: 11, color: Colors.grey)),
                   ],
                 ),
               ),
@@ -297,7 +338,7 @@ class _SightingCard extends StatelessWidget {
             const Padding(
               padding: EdgeInsets.only(right: 8),
               child: Icon(Icons.chevron_right,
-                color: Colors.grey, size: 20),
+                color: Color(0xFF888888), size: 16),
             ),
           ],
         ),
@@ -310,9 +351,9 @@ class _PlaceholderBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 90, height: 90,
-      color: Colors.grey[200],
-      child: const Icon(Icons.pets, color: Colors.grey),
+      width: 54, height: 54,
+      color: const Color(0xFFe8f5e9),
+      child: const Icon(Icons.pets, color: Color(0xFF2e7d32), size: 22),
     );
   }
 }
@@ -372,9 +413,12 @@ class _SightingDetailModalState extends State<_SightingDetailModal> {
 
   @override
   Widget build(BuildContext context) {
-    final s     = widget.sighting;
-    final iscat = s.animalType == 'cat';
-    final color = iscat ? Colors.orange : Colors.brown;
+    final s      = widget.sighting;
+    final iscat  = s.animalType == 'cat';
+    final color  = iscat
+      ? const Color(0xFFef6c00)
+      : const Color(0xFF795548);
+    final isNew  = s.isNewIndividual;
 
     return Container(
       decoration: const BoxDecoration(
@@ -393,102 +437,116 @@ class _SightingDetailModalState extends State<_SightingDetailModal> {
             ),
           ),
 
-          // Large image
           if (s.imageUrl.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: CachedNetworkImage(
-                  imageUrl: s.imageUrl,
-                  height: 220, width: double.infinity,
-                  fit: BoxFit.cover,
-                  placeholder: (_, __) => Container(
-                    height: 220, color: Colors.grey[200],
-                    child: const Center(
-                      child: CircularProgressIndicator())),
-                  errorWidget: (_, __, ___) => Container(
-                    height: 220, color: Colors.grey[200],
-                    child: const Icon(Icons.pets,
-                      size: 60, color: Colors.grey)),
-                ),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: CachedNetworkImage(
+                      imageUrl: s.imageUrl,
+                      height: 200, width: double.infinity,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => Container(
+                        height: 200, color: const Color(0xFFe8f5e9),
+                        child: const Center(
+                          child: CircularProgressIndicator())),
+                      errorWidget: (_, __, ___) => Container(
+                        height: 200, color: const Color(0xFFe8f5e9),
+                        child: const Icon(Icons.pets,
+                          size: 60, color: Color(0xFF2e7d32))),
+                    ),
+                  ),
+                  Positioned(
+                    top: 10, right: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.88),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        isNew ? 'NEW' : 'KNOWN',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          color: isNew
+                            ? const Color(0xFFe65100)
+                            : const Color(0xFF2e7d32),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
 
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Name + badge
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(_nickname,
-                        style: const TextStyle(
-                          fontSize: 22, fontWeight: FontWeight.bold)),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: s.isNewIndividual
-                          ? Colors.orange[100] : Colors.green[100],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        s.isNewIndividual ? 'NEW' : 'KNOWN',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 12,
-                          color: s.isNewIndividual
-                            ? Colors.orange[800] : Colors.green[800],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                Text(_nickname,
+                  style: const TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.w700,
+                    color: Color(0xFF1a1a1a))),
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Icon(Icons.pets, size: 14, color: color),
+                    Icon(Icons.pets, size: 13, color: color),
                     const SizedBox(width: 4),
                     Text(s.animalType.toUpperCase(),
                       style: TextStyle(
-                        color: color, fontWeight: FontWeight.w600,
-                        fontSize: 13)),
+                        color: color, fontWeight: FontWeight.w700,
+                        fontSize: 11)),
                   ],
                 ),
                 const SizedBox(height: 12),
-                const Divider(),
-                const SizedBox(height: 8),
+                const Divider(height: 1, thickness: 0.5),
+                const SizedBox(height: 12),
 
-                // Characteristics (if set)
+                // Info grid
                 if (_characteristics.isNotEmpty) ...[
-                  _InfoRow(
-                    icon: Icons.info_outline,
-                    label: 'Characteristics',
-                    value: _characteristics,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _InfoTile(
+                          label: 'Characteristics',
+                          value: _characteristics,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _InfoTile(
+                          label: 'Confidence',
+                          value: '${(s.confidence * 100).toStringAsFixed(1)}%',
+                          valueColor: const Color(0xFF2e7d32),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                ] else ...[
+                  _InfoTile(
+                    label: 'Confidence',
+                    value: '${(s.confidence * 100).toStringAsFixed(1)}%',
+                    valueColor: const Color(0xFF2e7d32),
                   ),
                   const SizedBox(height: 8),
                 ],
-
-                _InfoRow(
-                  icon: Icons.location_on,
+                _InfoTile(
                   label: 'Location',
                   value: s.locationName,
+                  fullWidth: true,
                 ),
                 const SizedBox(height: 8),
-                _InfoRow(
-                  icon: Icons.access_time,
+                _InfoTile(
                   label: 'Sighted',
                   value: DateFormat('MMM d, yyyy • h:mm a')
                       .format(s.timestamp),
-                ),
-                const SizedBox(height: 8),
-                _InfoRow(
-                  icon: Icons.analytics_outlined,
-                  label: 'Confidence',
-                  value: '${(s.confidence * 100).toStringAsFixed(1)}%',
+                  fullWidth: true,
                 ),
                 const SizedBox(height: 20),
 
@@ -500,11 +558,14 @@ class _SightingDetailModalState extends State<_SightingDetailModal> {
                           width: 18, height: 18,
                           child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.map),
+                      : const Icon(Icons.map, size: 18),
                     label: Text(_loadingMap
                       ? 'Loading...'
                       : 'View $_nickname\'s Locations on Map'),
                     style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2e7d32),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
@@ -522,37 +583,43 @@ class _SightingDetailModalState extends State<_SightingDetailModal> {
   }
 }
 
-class _InfoRow extends StatelessWidget {
-  final IconData icon;
+class _InfoTile extends StatelessWidget {
   final String label;
   final String value;
+  final Color? valueColor;
+  final bool   fullWidth;
 
-  const _InfoRow({
-    required this.icon,
+  const _InfoTile({
     required this.label,
     required this.value,
+    this.valueColor,
+    this.fullWidth = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 16, color: Colors.grey),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label,
-                style: const TextStyle(fontSize: 11, color: Colors.grey)),
-              Text(value,
-                style: const TextStyle(
-                  fontSize: 13, color: Colors.black87)),
-            ],
-          ),
-        ),
-      ],
+    return Container(
+      width: fullWidth ? double.infinity : null,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFAFAFA),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+            style: const TextStyle(
+              fontSize: 10, color: Color(0xFF888888))),
+          const SizedBox(height: 3),
+          Text(value,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: valueColor ?? const Color(0xFF1a1a1a),
+            )),
+        ],
+      ),
     );
   }
 }
