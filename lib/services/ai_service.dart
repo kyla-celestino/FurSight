@@ -19,7 +19,7 @@ class DetectionResult {
 }
 
 class AIService {
-  static const double SIMILARITY_THRESHOLD = 0.4;
+  static const double SIMILARITY_THRESHOLD = 0.65;
   static const int DETECT_INPUT_SIZE = 416;
   static const int REID_INPUT_SIZE = 224;
   static const int EMBEDDING_DIM = 128;
@@ -66,7 +66,7 @@ class AIService {
       height: DETECT_INPUT_SIZE,
     );
 
-    final input = _imageToFloat32(resized, DETECT_INPUT_SIZE);
+    final input = _imageToFloat32Detection(resized, DETECT_INPUT_SIZE);
 
     final outputShape = _detectInterpreter!.getOutputTensor(0).shape;
     final output = List.generate(
@@ -150,13 +150,20 @@ class AIService {
       height: REID_INPUT_SIZE,
     );
 
-    final input = _imageToFloat32(resized, REID_INPUT_SIZE);
+    final input = _imageToFloat32Reid(resized, REID_INPUT_SIZE);
     final output = List.generate(1, (_) => List.filled(EMBEDDING_DIM, 0.0));
 
     _reidInterpreter!.run(input, output);
 
     final embedding = output[0];
     final norm = sqrt(embedding.fold(0.0, (sum, v) => sum + v * v));
+    
+    // ── DEBUG ──────────────────────────────────────────
+    print('=== EMBEDDING DEBUG ===');
+    print('Raw norm before normalize: $norm');
+    print('First 5 values: ${embedding.sublist(0, 5)}');
+    // ───────────────────────────────────────────────────
+
     if (norm > 0) {
       return embedding.map((v) => v / norm).toList();
     }
@@ -184,13 +191,22 @@ class AIService {
     String? bestId;
     double bestSim = 0.0;
 
+    // ── DEBUG ──────────────────────────────────────────
+    print('=== FINDBESTMATCH DEBUG ===');
+    print('Known embeddings count: ${knownEmbeddings.length}');
+    print('Query embedding first 5: ${queryEmbedding.sublist(0, 5)}');
+    // ───────────────────────────────────────────────────
+
     for (final entry in knownEmbeddings.entries) {
       final sim = cosineSimilarity(queryEmbedding, entry.value);
+      print('  ${entry.key} → sim: $sim'); // DEBUG
       if (sim > bestSim) {
         bestSim = sim;
         bestId = entry.key;
       }
     }
+
+    print('Best match: $bestId at $bestSim vs threshold $SIMILARITY_THRESHOLD'); // DEBUG
 
     if (bestSim >= SIMILARITY_THRESHOLD) {
       return {'individualId': bestId, 'similarity': bestSim};
@@ -198,9 +214,10 @@ class AIService {
     return {'individualId': null, 'similarity': bestSim};
   }
 
-  List<List<List<List<double>>>> _imageToFloat32(
-    img.Image image,
-    int size,
+  // For detection (unchanged — no normalization needed for YOLO)
+List<List<List<List<double>>>> _imageToFloat32Detection(
+  img.Image image,
+  int size,
   ) {
     return List.generate(
       1,
@@ -214,6 +231,32 @@ class AIService {
               pixel.r / 255.0,
               pixel.g / 255.0,
               pixel.b / 255.0,
+            ];
+          },
+        ),
+      ),
+    );
+  }
+
+// For reid — applies ImageNet mean/std normalization
+List<List<List<List<double>>>> _imageToFloat32Reid(
+  img.Image image,
+  int size,
+  ) {
+    const mean = [0.485, 0.456, 0.406];
+    const std  = [0.229, 0.224, 0.225];
+    return List.generate(
+      1,
+      (_) => List.generate(
+        size,
+        (y) => List.generate(
+          size,
+          (x) {
+            final pixel = image.getPixel(x, y);
+            return [
+              (pixel.r / 255.0 - mean[0]) / std[0],
+              (pixel.g / 255.0 - mean[1]) / std[1],
+              (pixel.b / 255.0 - mean[2]) / std[2],
             ];
           },
         ),

@@ -37,7 +37,7 @@ class FirebaseService {
   Future<void> uploadSeedEmbeddings() async {
     try {
       final jsonStr = await rootBundle.loadString(
-        'assets/models/seed_embeddings_v2.json',
+        'assets/models/seed_embeddings_v3.json',
       );
       final Map<String, dynamic> seedData = json.decode(jsonStr);
 
