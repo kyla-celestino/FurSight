@@ -730,17 +730,6 @@ class _FeaturedSightingCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Container(
-                        width: 36, height: 36,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: typeColor.withValues(alpha: 0.1),
-                          border: Border.all(
-                              color: typeColor.withValues(alpha: 0.3), width: 1.5),
-                        ),
-                        child: Icon(Icons.person,
-                            size: 18, color: typeColor),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -774,29 +763,6 @@ class _FeaturedSightingCard extends StatelessWidget {
                       height: 1.4,
                     ),
                     maxLines: 3,
-                  ),
-                  const SizedBox(height: 12),
-
-                  // Bottom row: likes / comments / share
-                  Row(
-                    children: [
-                      const Icon(Icons.favorite_border,
-                          size: 18, color: Color(0xFF888888)),
-                      const SizedBox(width: 5),
-                      const Text('–',
-                          style: TextStyle(
-                              fontSize: 13, color: Color(0xFF888888))),
-                      const SizedBox(width: 14),
-                      const Icon(Icons.chat_bubble_outline,
-                          size: 17, color: Color(0xFF888888)),
-                      const SizedBox(width: 5),
-                      const Text('–',
-                          style: TextStyle(
-                              fontSize: 13, color: Color(0xFF888888))),
-                      const Spacer(),
-                      const Icon(Icons.share_outlined,
-                          size: 18, color: Color(0xFF888888)),
-                    ],
                   ),
                 ],
               ),
@@ -1106,31 +1072,10 @@ class _CommunitySightingDetailModalState
                 const Divider(height: 1, thickness: 0.5),
                 const SizedBox(height: 12),
                 if (_characteristics.isNotEmpty) ...[
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _InfoTile(
-                          label: 'Characteristics',
-                          value: _characteristics,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _InfoTile(
-                          label: 'Confidence',
-                          value:
-                              '${(s.confidence * 100).toStringAsFixed(1)}%',
-                          valueColor: const Color(0xFF2e7d32),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                ] else ...[
                   _InfoTile(
-                    label: 'Confidence',
-                    value: '${(s.confidence * 100).toStringAsFixed(1)}%',
-                    valueColor: const Color(0xFF2e7d32),
+                    label: 'Characteristics',
+                    value: _characteristics,
+                    fullWidth: true,
                   ),
                   const SizedBox(height: 8),
                 ],
@@ -1239,15 +1184,16 @@ class _ImageSearchResultCard extends StatelessWidget {
             ),
           ],
         ),
-        child: Row(
+        clipBehavior: Clip.hardEdge,
+        child: IntrinsicHeight(
+          child: Row(
           children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.horizontal(
-                  left: Radius.circular(16)),
+            SizedBox(
+              width: 80,
               child: individual.latestImageUrl.isNotEmpty
                 ? CachedNetworkImage(
                     imageUrl: individual.latestImageUrl,
-                    width: 60, height: 60, fit: BoxFit.cover,
+                    width: 80, fit: BoxFit.cover,
                     placeholder: (_, __) => _SearchPlaceholderBox(),
                     errorWidget: (_, __, ___) => _SearchPlaceholderBox(),
                   )
@@ -1325,6 +1271,7 @@ class _ImageSearchResultCard extends StatelessWidget {
                   color: Color(0xFF888888), size: 18),
             ),
           ],
+        ),
         ),
       ),
     );
@@ -1515,13 +1462,11 @@ class _ImageSearchIndividualModalState
 class _InfoTile extends StatelessWidget {
   final String label;
   final String value;
-  final Color? valueColor;
-  final bool   fullWidth;
+  final bool fullWidth;
 
   const _InfoTile({
     required this.label,
     required this.value,
-    this.valueColor,
     this.fullWidth = false,
   });
 
@@ -1542,10 +1487,10 @@ class _InfoTile extends StatelessWidget {
                   fontSize: 10, color: Color(0xFF888888))),
           const SizedBox(height: 3),
           Text(value,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: valueColor ?? const Color(0xFF1a1a1a),
+                color: Color(0xFF1a1a1a),
               )),
         ],
       ),
