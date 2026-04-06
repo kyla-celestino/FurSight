@@ -70,3 +70,4 @@ lib/firebase_options.dart
 coverage/
 
 .metadata
+furfinder_codebase.txt
