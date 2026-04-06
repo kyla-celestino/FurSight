@@ -184,21 +184,20 @@ class _IndividualCard extends StatelessWidget {
       onTap: () => _showDetailModal(context),
       child: Card(
         margin: const EdgeInsets.only(bottom: 12),
+        clipBehavior: Clip.hardEdge,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Row(
+        child: IntrinsicHeight(
+          child: Row(
           children: [
             // Photo
-            ClipRRect(
-              borderRadius: const BorderRadius.horizontal(
-                left: Radius.circular(16),
-              ),
+            SizedBox(
+              width: 90,
               child: individual.latestImageUrl.isNotEmpty
                 ? CachedNetworkImage(
                     imageUrl: individual.latestImageUrl,
                     width: 90,
-                    height: 90,
                     fit: BoxFit.cover,
                     placeholder: (_, __) => _PlaceholderBox(),
                     errorWidget: (_, __, ___) => _PlaceholderBox(),
@@ -275,6 +274,7 @@ class _IndividualCard extends StatelessWidget {
               child: Icon(Icons.chevron_right, color: Colors.grey, size: 20),
             ),
           ],
+        ),
         ),
       ),
     );
