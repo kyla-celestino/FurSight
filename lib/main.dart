@@ -341,19 +341,26 @@ class _ProfileTab extends StatelessWidget {
               child: TextButton(
                 onPressed: () async => await authService.signOut(),
                 style: TextButton.styleFrom(
-                  backgroundColor: const Color(0xFFFCEDE8),
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(0xFFD32F2F),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(100),
                   ),
                 ),
-                child: const Text(
-                  'Sign Out',
-                  style: TextStyle(
-                    color: Color(0xFFD32F2F),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                  ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.logout, size: 16),
+                    SizedBox(width: 8),
+                    Text(
+                      'Sign Out',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -384,13 +391,7 @@ class _ProfileTab extends StatelessWidget {
           ),
         ],
       ),
-      actions: const [
-        Padding(
-          padding: EdgeInsets.only(right: 12),
-          child:
-              Icon(Icons.notifications_outlined, color: Color(0xFF777777), size: 22),
-        ),
-      ],
+      actions: const [],
     );
   }
 }
