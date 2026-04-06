@@ -201,13 +201,7 @@ class _LogsScreenState extends State<LogsScreen> {
           ),
         ],
       ),
-      actions: const [
-        Padding(
-          padding: EdgeInsets.only(right: 12),
-          child: Icon(Icons.notifications_outlined,
-              color: Color(0xFF777777), size: 22),
-        ),
-      ],
+      actions: const [],
     );
   }
 
@@ -273,8 +267,6 @@ class _SightingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isNew     = sighting.isNewIndividual;
-
     // First item — large featured card
     if (isFirst) {
       return GestureDetector(
@@ -324,9 +316,9 @@ class _SightingCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: isNew
-                            ? const Color(0xFF7A6030)
-                            : const Color(0xFF2e7d32),
+                        color: sighting.animalType == 'cat'
+                            ? const Color(0xFFef6c00)
+                            : const Color(0xFF795548),
                         borderRadius: BorderRadius.circular(100),
                       ),
                       child: Row(
@@ -341,7 +333,7 @@ class _SightingCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 5),
                           Text(
-                            isNew ? 'STILL LOST' : 'KNOWN',
+                            sighting.animalType.toUpperCase(),
                             style: const TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.w700,
@@ -375,26 +367,6 @@ class _SightingCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                        ),
-                        // Action icons
-                        Container(
-                          width: 36, height: 36,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF6F4F1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.edit_outlined,
-                              size: 16, color: Color(0xFF555555)),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          width: 36, height: 36,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF6F4F1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.share_outlined,
-                              size: 16, color: Color(0xFF555555)),
                         ),
                       ],
                     ),
@@ -479,19 +451,19 @@ class _SightingCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: isNew
-                              ? const Color(0xFFE8F5E9)
-                              : const Color(0xFFFCEDE8),
+                          color: sighting.animalType == 'cat'
+                              ? const Color(0xFFFFF3E0)
+                              : const Color(0xFFEFEBE9),
                           borderRadius: BorderRadius.circular(100),
                         ),
                         child: Text(
-                          isNew ? 'REPORTED' : 'FOUND',
+                          sighting.animalType.toUpperCase(),
                           style: TextStyle(
                             fontSize: 8,
                             fontWeight: FontWeight.w700,
-                            color: isNew
-                                ? const Color(0xFF2e7d32)
-                                : const Color(0xFFD32F2F),
+                            color: sighting.animalType == 'cat'
+                                ? const Color(0xFFef6c00)
+                                : const Color(0xFF795548),
                             letterSpacing: 0.3,
                           ),
                         ),
@@ -692,31 +664,10 @@ class _SightingDetailModalState extends State<_SightingDetailModal> {
                 const Divider(height: 1, thickness: 0.5),
                 const SizedBox(height: 12),
                 if (_characteristics.isNotEmpty) ...[
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _InfoTile(
-                          label: 'Characteristics',
-                          value: _characteristics,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _InfoTile(
-                          label: 'Confidence',
-                          value:
-                              '${(s.confidence * 100).toStringAsFixed(1)}%',
-                          valueColor: const Color(0xFF2e7d32),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                ] else ...[
                   _InfoTile(
-                    label: 'Confidence',
-                    value: '${(s.confidence * 100).toStringAsFixed(1)}%',
-                    valueColor: const Color(0xFF2e7d32),
+                    label: 'Characteristics',
+                    value: _characteristics,
+                    fullWidth: true,
                   ),
                   const SizedBox(height: 8),
                 ],
@@ -766,13 +717,11 @@ class _SightingDetailModalState extends State<_SightingDetailModal> {
 class _InfoTile extends StatelessWidget {
   final String label;
   final String value;
-  final Color? valueColor;
-  final bool   fullWidth;
+  final bool fullWidth;
 
   const _InfoTile({
     required this.label,
     required this.value,
-    this.valueColor,
     this.fullWidth = false,
   });
 
@@ -793,10 +742,10 @@ class _InfoTile extends StatelessWidget {
                   fontSize: 10, color: Color(0xFF888888))),
           const SizedBox(height: 3),
           Text(value,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: valueColor ?? const Color(0xFF1a1a1a),
+                color: Color(0xFF1a1a1a),
               )),
         ],
       ),
