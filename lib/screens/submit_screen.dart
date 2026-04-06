@@ -518,13 +518,7 @@ class _SubmitScreenState extends State<SubmitScreen> {
           ),
         ],
       ),
-      actions: const [
-        Padding(
-          padding: EdgeInsets.only(right: 12),
-          child: Icon(Icons.notifications_outlined,
-              color: Color(0xFF777777), size: 22),
-        ),
-      ],
+      actions: const [],
     );
   }
 }
