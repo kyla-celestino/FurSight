@@ -40,7 +40,7 @@ class _LogsScreenState extends State<LogsScreen> {
 
           return CustomScrollView(
             slivers: [
-              // ── Header ──────────────────────────────────────
+              // ── Scrollable header: title + subtitle + stats ──
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
@@ -65,67 +65,88 @@ class _LogsScreenState extends State<LogsScreen> {
                         ),
                       ),
                       const SizedBox(height: 14),
-
-                      // ── Search bar ─────────────────────────
-                      GestureDetector(
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const SearchScreen()),
-                        ),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(100),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Color(0x0F000000),
-                                blurRadius: 8, offset: Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Row(
-                            children: [
-                              Icon(Icons.search,
-                                  color: Color(0xFF888888), size: 18),
-                              SizedBox(width: 8),
-                              Text(
-                                'Search animals...',
-                                style: TextStyle(
-                                    color: Color(0xFFBBBBBB), fontSize: 13),
-                              ),
-                            ],
-                          ),
-                        ),
+                      _StatsRow(
+                        total: allSightings.length,
+                        dogs: allSightings
+                            .where((s) => s.animalType == 'dog')
+                            .length,
+                        cats: allSightings
+                            .where((s) => s.animalType == 'cat')
+                            .length,
                       ),
-                      const SizedBox(height: 12),
-
-                      // ── Filter chips ───────────────────────
-                      Row(
-                        children: [
-                          _LogsFilterChip(
-                            label: 'All',
-                            isActive: _filter == 'all',
-                            onTap: () => setState(() => _filter = 'all'),
-                          ),
-                          const SizedBox(width: 8),
-                          _LogsFilterChip(
-                            label: 'Dogs',
-                            isActive: _filter == 'dog',
-                            onTap: () => setState(() => _filter = 'dog'),
-                          ),
-                          const SizedBox(width: 8),
-                          _LogsFilterChip(
-                            label: 'Cats',
-                            isActive: _filter == 'cat',
-                            onTap: () => setState(() => _filter = 'cat'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
                     ],
+                  ),
+                ),
+              ),
+
+              // ── Sticky: search bar + filter chips ────────────
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _StickyBarDelegate(
+                  height: 106,
+                  backgroundColor: const Color(0xFFF0EDE8),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        GestureDetector(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const SearchScreen()),
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(100),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x0F000000),
+                                  blurRadius: 8, offset: Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(Icons.search,
+                                    color: Color(0xFF888888), size: 18),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Search animals...',
+                                  style: TextStyle(
+                                      color: Color(0xFFBBBBBB), fontSize: 13),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            _LogsFilterChip(
+                              label: 'All',
+                              isActive: _filter == 'all',
+                              onTap: () => setState(() => _filter = 'all'),
+                            ),
+                            const SizedBox(width: 8),
+                            _LogsFilterChip(
+                              label: 'Dogs',
+                              isActive: _filter == 'dog',
+                              onTap: () => setState(() => _filter = 'dog'),
+                            ),
+                            const SizedBox(width: 8),
+                            _LogsFilterChip(
+                              label: 'Cats',
+                              isActive: _filter == 'cat',
+                              onTap: () => setState(() => _filter = 'cat'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -705,6 +726,175 @@ class _SightingDetailModalState extends State<_SightingDetailModal> {
                   ),
                 ),
                 const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Sticky header delegate ────────────────────────────────────
+class _StickyBarDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  final double height;
+  final Color backgroundColor;
+
+  const _StickyBarDelegate({
+    required this.child,
+    required this.height,
+    required this.backgroundColor,
+  });
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) =>
+      Material(color: backgroundColor, elevation: 0, child: child);
+
+  @override double get maxExtent => height;
+  @override double get minExtent => height;
+  @override bool shouldRebuild(_StickyBarDelegate old) =>
+      old.height != height || old.backgroundColor != backgroundColor;
+}
+
+// ── Stats row ─────────────────────────────────────────────────
+class _StatsRow extends StatelessWidget {
+  final int total, dogs, cats;
+  const _StatsRow({
+    required this.total,
+    required this.dogs,
+    required this.cats,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Total submissions card
+          Expanded(
+            flex: 3,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFBDD9A8),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.auto_awesome,
+                          size: 14, color: Color(0xFF2e7d32)),
+                      SizedBox(width: 3),
+                      Icon(Icons.auto_awesome,
+                          size: 9, color: Color(0xFF2e7d32)),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '$total',
+                    style: const TextStyle(
+                      fontSize: 52,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF2e7d32),
+                      height: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'TOTAL\nSUBMISSIONS',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF2e7d32),
+                      letterSpacing: 0.3,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          // Dogs + cats column
+          Expanded(
+            flex: 2,
+            child: Column(
+              children: [
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5E3B0),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '$dogs',
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF7A5200),
+                            height: 1.0,
+                          ),
+                        ),
+                        const Text(
+                          'DOGS',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF7A5200),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5C8C0),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '$cats',
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF7A1A1A),
+                            height: 1.0,
+                          ),
+                        ),
+                        const Text(
+                          'CATS',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF7A1A1A),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
