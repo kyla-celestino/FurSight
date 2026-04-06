@@ -327,34 +327,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // FurFinder header row
-                  Row(
+                  const Row(
                     children: [
-                      const Icon(Icons.pets,
+                      Icon(Icons.pets,
                           color: Color(0xFF1b5e20), size: 22),
-                      const SizedBox(width: 8),
-                      const Text(
+                      SizedBox(width: 8),
+                      Text(
                         'FurFinder',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
                           color: Color(0xFF1b5e20),
                         ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        width: 36, height: 36,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          shape: BoxShape.circle,
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x14000000),
-                              blurRadius: 8, offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(Icons.notifications_outlined,
-                            color: Color(0xFF555555), size: 20),
                       ),
                     ],
                   ),
