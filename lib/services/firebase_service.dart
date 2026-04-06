@@ -146,7 +146,11 @@ class FirebaseService {
           updateData['nickname'] = nickname.trim();
         }
         if (characteristics != null && characteristics.trim().isNotEmpty) {
-          updateData['characteristics'] = characteristics.trim();
+          final existing = (data['characteristics'] as String? ?? '').trim();
+          final incoming = characteristics.trim();
+          updateData['characteristics'] = existing.isEmpty
+              ? incoming
+              : '$existing, $incoming';
         }
 
         await docRef.update(updateData);
