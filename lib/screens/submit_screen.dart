@@ -293,8 +293,8 @@ class _SubmitScreenState extends State<SubmitScreen> {
                   icon: const Icon(Icons.image_outlined, size: 18),
                   label: const Text('Upload from Gallery'),
                   style: TextButton.styleFrom(
-                    backgroundColor: const Color(0xFFFCEDE8),
-                    foregroundColor: const Color(0xFF795548),
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF2e7d32),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(100),
@@ -368,25 +368,12 @@ class _SubmitScreenState extends State<SubmitScreen> {
                 maxLength: 30,
               ),
               const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _FieldLabel('TYPE / BREED'),
-                        const SizedBox(height: 6),
-                        _FormField(
-                          controller: _characteristicsController,
-                          hint: 'e.g. Golden Retriever',
-                          maxLength: 60,
-                          suffix: const Icon(Icons.search,
-                              size: 16, color: Color(0xFFAAAAAA)),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+              _FieldLabel('CHARACTERISTICS (OPTIONAL)'),
+              const SizedBox(height: 6),
+              _FormField(
+                controller: _characteristicsController,
+                hint: 'e.g. white patch on chest, limps on left leg',
+                maxLength: 120,
               ),
               const SizedBox(height: 24),
 
@@ -566,13 +553,11 @@ class _FormField extends StatelessWidget {
   final String hint;
   final TextCapitalization capitalization;
   final int? maxLength;
-  final Widget? suffix;
   const _FormField({
     required this.controller,
     required this.hint,
     this.capitalization = TextCapitalization.none,
     this.maxLength,
-    this.suffix,
   });
 
   @override
@@ -596,7 +581,6 @@ class _FormField extends StatelessWidget {
           contentPadding: const EdgeInsets.symmetric(
               horizontal: 14, vertical: 14),
           counterText: '',
-          suffixIcon: suffix,
         ),
       ),
     );
