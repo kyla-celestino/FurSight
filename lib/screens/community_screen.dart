@@ -282,151 +282,169 @@ class _CommunityScreenState extends State<CommunityScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF0EDE8),
       appBar: _buildAppBar(),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Header ─────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'RECENT ACTIVITY',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF2e7d32),
-                    letterSpacing: 0.8,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Community Sightings',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1a1a1a),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Help neighbors find their lost companions by\nverifying recent sightings in your area.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF888888),
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 14),
+      body: StreamBuilder<List<AnimalSighting>>(
+        stream: _firebaseService.getSightingsStream(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFF2e7d32)),
+            );
+          }
 
-                // Search bar + camera button
-                Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const SearchScreen()),
-                        ),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(100),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Color(0x0F000000),
-                                blurRadius: 8, offset: Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Row(
-                            children: [
-                              Icon(Icons.search,
-                                  color: Color(0xFF888888), size: 18),
-                              SizedBox(width: 8),
-                              Text(
-                                'Search animals...',
-                                style: TextStyle(
-                                    color: Color(0xFFBBBBBB), fontSize: 13),
-                              ),
-                            ],
-                          ),
+          final all = snapshot.data ?? [];
+          final sightings = _filter == 'all'
+              ? all
+              : all.where((s) => s.animalType == _filter).toList();
+
+          return CustomScrollView(
+            slivers: [
+              // ── Scrollable header: title + subtitle + stats ──
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'RECENT ACTIVITY',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF2e7d32),
+                          letterSpacing: 0.8,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    GestureDetector(
-                      onTap: _startImageSearch,
-                      child: Container(
-                        width: 44, height: 44,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF2e7d32),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Color(0x1A2e7d32),
-                              blurRadius: 8, offset: Offset(0, 2),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Community Sightings',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1a1a1a),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Help neighbors find their lost companions by\nverifying recent sightings in your area.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF888888),
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      _StatsRow(
+                        total: all.length,
+                        dogs: all.where((s) => s.animalType == 'dog').length,
+                        cats: all.where((s) => s.animalType == 'cat').length,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // ── Sticky: search bar + filter chips ────────────
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _StickyBarDelegate(
+                  height: 108,
+                  backgroundColor: const Color(0xFFF0EDE8),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (_) => const SearchScreen()),
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 14, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(100),
+                                    boxShadow: const [
+                                      BoxShadow(
+                                        color: Color(0x0F000000),
+                                        blurRadius: 8, offset: Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Row(
+                                    children: [
+                                      Icon(Icons.search,
+                                          color: Color(0xFF888888), size: 18),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Search animals...',
+                                        style: TextStyle(
+                                            color: Color(0xFFBBBBBB),
+                                            fontSize: 13),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            GestureDetector(
+                              onTap: _startImageSearch,
+                              child: Container(
+                                width: 44, height: 44,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF2e7d32),
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Color(0x1A2e7d32),
+                                      blurRadius: 8, offset: Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(Icons.camera_alt,
+                                    color: Colors.white, size: 20),
+                              ),
                             ),
                           ],
                         ),
-                        child: const Icon(Icons.camera_alt,
-                            color: Colors.white, size: 20),
-                      ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            _FilterChip(
+                              label: 'All',
+                              isActive: _filter == 'all',
+                              onTap: () => setState(() => _filter = 'all'),
+                            ),
+                            const SizedBox(width: 8),
+                            _FilterChip(
+                              label: 'Dogs',
+                              isActive: _filter == 'dog',
+                              onTap: () => setState(() => _filter = 'dog'),
+                            ),
+                            const SizedBox(width: 8),
+                            _FilterChip(
+                              label: 'Cats',
+                              isActive: _filter == 'cat',
+                              onTap: () => setState(() => _filter = 'cat'),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 12),
+              ),
 
-                // Filter chips row
-                Row(
-                  children: [
-                    _FilterChip(
-                      label: 'All',
-                      isActive: _filter == 'all',
-                      onTap: () => setState(() => _filter = 'all'),
-                    ),
-                    const SizedBox(width: 8),
-                    _FilterChip(
-                      label: 'Dogs',
-                      isActive: _filter == 'dog',
-                      onTap: () => setState(() => _filter = 'dog'),
-                    ),
-                    const SizedBox(width: 8),
-                    _FilterChip(
-                      label: 'Cats',
-                      isActive: _filter == 'cat',
-                      onTap: () => setState(() => _filter = 'cat'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-              ],
-            ),
-          ),
-
-          // ── Sightings stream ────────────────────────────────
-          Expanded(
-            child: StreamBuilder<List<AnimalSighting>>(
-              stream: _firebaseService.getSightingsStream(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                        color: Color(0xFF2e7d32)),
-                  );
-                }
-
-                final all = snapshot.data ?? [];
-                final sightings = _filter == 'all'
-                    ? all
-                    : all.where((s) => s.animalType == _filter).toList();
-
-                if (sightings.isEmpty) {
-                  return Center(
+              // ── Empty state ───────────────────────────────────
+              if (sightings.isEmpty)
+                SliverFillRemaining(
+                  child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -445,29 +463,34 @@ class _CommunityScreenState extends State<CommunityScreen> {
                         ),
                       ],
                     ),
-                  );
-                }
+                  ),
+                ),
 
-                return ListView.builder(
+              // ── Sightings list ────────────────────────────────
+              if (sightings.isNotEmpty)
+                SliverPadding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                  itemCount: sightings.length,
-                  itemBuilder: (context, index) {
-                    if (index == 0) {
-                      return _FeaturedSightingCard(
-                        sighting: sightings[0],
-                        firebaseService: _firebaseService,
-                      );
-                    }
-                    return _CompactSightingCard(
-                      sighting: sightings[index],
-                      firebaseService: _firebaseService,
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        if (index == 0) {
+                          return _FeaturedSightingCard(
+                            sighting: sightings[0],
+                            firebaseService: _firebaseService,
+                          );
+                        }
+                        return _CompactSightingCard(
+                          sighting: sightings[index],
+                          firebaseService: _firebaseService,
+                        );
+                      },
+                      childCount: sightings.length,
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -492,13 +515,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
           ),
         ],
       ),
-      actions: const [
-        Padding(
-          padding: EdgeInsets.only(right: 12),
-          child: Icon(Icons.notifications_outlined,
-              color: Color(0xFF777777), size: 22),
-        ),
-      ],
+      actions: const [],
     );
   }
 }
@@ -1450,6 +1467,173 @@ class _ImageSearchIndividualModalState
                   ),
                 ),
                 const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Sticky header delegate ────────────────────────────────────
+class _StickyBarDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+  final double height;
+  final Color backgroundColor;
+
+  const _StickyBarDelegate({
+    required this.child,
+    required this.height,
+    required this.backgroundColor,
+  });
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) =>
+      Material(color: backgroundColor, elevation: 0, child: child);
+
+  @override double get maxExtent => height;
+  @override double get minExtent => height;
+  @override bool shouldRebuild(_StickyBarDelegate old) =>
+      old.height != height || old.backgroundColor != backgroundColor;
+}
+
+// ── Stats row ─────────────────────────────────────────────────
+class _StatsRow extends StatelessWidget {
+  final int total, dogs, cats;
+  const _StatsRow({
+    required this.total,
+    required this.dogs,
+    required this.cats,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            flex: 3,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFBDD9A8),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.auto_awesome,
+                          size: 14, color: Color(0xFF2e7d32)),
+                      SizedBox(width: 3),
+                      Icon(Icons.auto_awesome,
+                          size: 9, color: Color(0xFF2e7d32)),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '$total',
+                    style: const TextStyle(
+                      fontSize: 52,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF2e7d32),
+                      height: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'TOTAL\nSIGHTINGS',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF2e7d32),
+                      letterSpacing: 0.3,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            flex: 2,
+            child: Column(
+              children: [
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5E3B0),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '$dogs',
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF7A5200),
+                            height: 1.0,
+                          ),
+                        ),
+                        const Text(
+                          'DOGS',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF7A5200),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5C8C0),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '$cats',
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF7A1A1A),
+                            height: 1.0,
+                          ),
+                        ),
+                        const Text(
+                          'CATS',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF7A1A1A),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
