@@ -284,12 +284,6 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
                 },
               ),
             ),
-          if (!_isIndividualMode)
-            const Padding(
-              padding: EdgeInsets.only(right: 12),
-              child: Icon(Icons.notifications_outlined,
-                  color: Color(0xFF777777), size: 22),
-            ),
         ],
       ),
       body: _isIndividualMode
