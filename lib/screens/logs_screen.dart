@@ -19,186 +19,200 @@ class _LogsScreenState extends State<LogsScreen> {
   final _authService     = AuthService();
   String _filter         = 'all';
 
+  List<AnimalSighting> _allSightings = [];
+  bool _loading = true;
+
+  late final _streamSub = _firebaseService
+      .getUserSightings(_authService.currentUserId)
+      .listen((data) {
+        if (mounted) setState(() { _allSightings = data; _loading = false; });
+      });
+
+  @override
+  void initState() {
+    super.initState();
+    _streamSub; // initialise
+  }
+
+  @override
+  void dispose() {
+    _streamSub.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final allSightings = _allSightings;
+    final sightings    = _filter == 'all'
+        ? allSightings
+        : allSightings.where((s) => s.animalType == _filter).toList();
+
     return Scaffold(
       backgroundColor: const Color(0xFFF0EDE8),
       appBar: _buildAppBar(),
-      body: StreamBuilder<List<AnimalSighting>>(
-        stream: _firebaseService.getUserSightings(_authService.currentUserId),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
+      body: _loading
+          ? const Center(
               child: CircularProgressIndicator(color: Color(0xFF2e7d32)),
-            );
-          }
-
-          final allSightings = snapshot.data ?? [];
-          final sightings    = _filter == 'all'
-              ? allSightings
-              : allSightings.where((s) => s.animalType == _filter).toList();
-
-          return CustomScrollView(
-            slivers: [
-              // ── Scrollable header: title + subtitle + stats ──
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Submission Logs',
-                        style: TextStyle(
-                          fontSize: 30,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1a1a1a),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Your contribution to the community helps\nbring pets back home.',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF888888),
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      _StatsRow(
-                        total: allSightings.length,
-                        dogs: allSightings
-                            .where((s) => s.animalType == 'dog')
-                            .length,
-                        cats: allSightings
-                            .where((s) => s.animalType == 'cat')
-                            .length,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // ── Sticky: search bar + filter chips ────────────
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _StickyBarDelegate(
-                  height: 106,
-                  backgroundColor: const Color(0xFFF0EDE8),
+            )
+          : CustomScrollView(
+              slivers: [
+                // ── Scrollable header: title + subtitle + stats ──
+                SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        GestureDetector(
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (_) => const SearchScreen()),
-                          ),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(100),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Color(0x0F000000),
-                                  blurRadius: 8, offset: Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: const Row(
-                              children: [
-                                Icon(Icons.search,
-                                    color: Color(0xFF888888), size: 18),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Search animals...',
-                                  style: TextStyle(
-                                      color: Color(0xFFBBBBBB), fontSize: 13),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            _LogsFilterChip(
-                              label: 'All',
-                              isActive: _filter == 'all',
-                              onTap: () => setState(() => _filter = 'all'),
-                            ),
-                            const SizedBox(width: 8),
-                            _LogsFilterChip(
-                              label: 'Dogs',
-                              isActive: _filter == 'dog',
-                              onTap: () => setState(() => _filter = 'dog'),
-                            ),
-                            const SizedBox(width: 8),
-                            _LogsFilterChip(
-                              label: 'Cats',
-                              isActive: _filter == 'cat',
-                              onTap: () => setState(() => _filter = 'cat'),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              // ── Empty state ────────────────────────────────
-              if (sightings.isEmpty)
-                SliverFillRemaining(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.pets,
-                            size: 64, color: Color(0xFFc8e6c9)),
-                        const SizedBox(height: 16),
-                        Text(
-                          allSightings.isEmpty
-                              ? 'No submissions yet'
-                              : 'No ${_filter == 'cat' ? 'cat' : 'dog'} submissions',
+                        const Text(
+                          'Submission Logs',
                           style: TextStyle(
-                              color: Colors.grey[600], fontSize: 18),
+                            fontSize: 30,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1a1a1a),
+                          ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          allSightings.isEmpty
-                              ? 'Be the first to report a sighting!'
-                              : 'Try switching the filter',
-                          style: TextStyle(color: Colors.grey[500]),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Your contribution to the community helps\nbring pets back home.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF888888),
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        _StatsRow(
+                          total: allSightings.length,
+                          dogs: allSightings
+                              .where((s) => s.animalType == 'dog')
+                              .length,
+                          cats: allSightings
+                              .where((s) => s.animalType == 'cat')
+                              .length,
                         ),
                       ],
                     ),
                   ),
                 ),
 
-              // ── Sightings list ─────────────────────────────
-              if (sightings.isNotEmpty)
-                SliverPadding(
-                  padding:
-                      const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) => _SightingCard(
-                        sighting: sightings[index],
-                        isFirst: index == 0,
+                // ── Sticky: search bar + filter chips ────────────
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _StickyBarDelegate(
+                    height: 106,
+                    backgroundColor: const Color(0xFFF0EDE8),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          GestureDetector(
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const SearchScreen()),
+                            ),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(100),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Color(0x0F000000),
+                                    blurRadius: 8, offset: Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.search,
+                                      color: Color(0xFF888888), size: 18),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Search animals...',
+                                    style: TextStyle(
+                                        color: Color(0xFFBBBBBB), fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              _LogsFilterChip(
+                                label: 'All',
+                                isActive: _filter == 'all',
+                                onTap: () => setState(() => _filter = 'all'),
+                              ),
+                              const SizedBox(width: 8),
+                              _LogsFilterChip(
+                                label: 'Dogs',
+                                isActive: _filter == 'dog',
+                                onTap: () => setState(() => _filter = 'dog'),
+                              ),
+                              const SizedBox(width: 8),
+                              _LogsFilterChip(
+                                label: 'Cats',
+                                isActive: _filter == 'cat',
+                                onTap: () => setState(() => _filter = 'cat'),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                      childCount: sightings.length,
                     ),
                   ),
                 ),
-            ],
-          );
-        },
-      ),
+
+                // ── Empty state ────────────────────────────────
+                if (sightings.isEmpty)
+                  SliverFillRemaining(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.pets,
+                              size: 64, color: Color(0xFFc8e6c9)),
+                          const SizedBox(height: 16),
+                          Text(
+                            allSightings.isEmpty
+                                ? 'No submissions yet'
+                                : 'No ${_filter == 'cat' ? 'cat' : 'dog'} submissions',
+                            style: TextStyle(
+                                color: Colors.grey[600], fontSize: 18),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            allSightings.isEmpty
+                                ? 'Be the first to report a sighting!'
+                                : 'Try switching the filter',
+                            style: TextStyle(color: Colors.grey[500]),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                // ── Sightings list ─────────────────────────────
+                if (sightings.isNotEmpty)
+                  SliverPadding(
+                    padding:
+                        const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => _SightingCard(
+                          sighting: sightings[index],
+                          isFirst: index == 0,
+                        ),
+                        childCount: sightings.length,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
     );
   }
 
@@ -693,6 +707,12 @@ class _SightingDetailModalState extends State<_SightingDetailModal> {
                   const SizedBox(height: 8),
                 ],
                 _InfoTile(
+                  label: 'Similarity',
+                  value: '${(s.confidence * 100).toStringAsFixed(1)}%',
+                  fullWidth: true,
+                ),
+                const SizedBox(height: 8),
+                _InfoTile(
                   label: 'Location', value: s.locationName, fullWidth: true),
                 const SizedBox(height: 8),
                 _InfoTile(
@@ -753,8 +773,7 @@ class _StickyBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override double get maxExtent => height;
   @override double get minExtent => height;
-  @override bool shouldRebuild(_StickyBarDelegate old) =>
-      old.height != height || old.backgroundColor != backgroundColor;
+  @override bool shouldRebuild(_StickyBarDelegate old) => true;
 }
 
 // ── Stats row ─────────────────────────────────────────────────
