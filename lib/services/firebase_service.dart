@@ -47,6 +47,26 @@ class FirebaseService {
     }
   }
 
+  // ── Load embeddings for individuals matching a nickname ───
+  Future<Map<String, List<double>>> getEmbeddingsByNickname(
+      String nickname) async {
+    if (nickname.trim().isEmpty) return {};
+    try {
+      final snapshot = await _individuals
+          .where('nickname', isEqualTo: nickname.trim())
+          .get();
+      final Map<String, List<double>> embeddings = {};
+      for (final doc in snapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final embedding = List<double>.from(data['avgEmbedding'] ?? []);
+        if (embedding.isNotEmpty) embeddings[doc.id] = embedding;
+      }
+      return embeddings;
+    } catch (e) {
+      return {};
+    }
+  }
+
   // ── Fetch multiple individuals by their IDs ───────────────
   Future<List<AnimalIndividual>> getIndividualsByIds(
       List<String> ids) async {
