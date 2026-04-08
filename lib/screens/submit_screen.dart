@@ -91,11 +91,28 @@ class _SubmitScreenState extends State<SubmitScreen> {
             'Identified as ${detection.animalType}! Checking identity...';
       });
 
-      final embedding      = await _aiService.getEmbedding(detection.croppedImage);
-      final knownEmbeddings = await _firebaseService.loadEmbeddings(
-        detection.animalType,
-      );
-      final match = _aiService.findBestMatch(embedding, knownEmbeddings);
+      final embedding = await _aiService.getEmbedding(detection.croppedImage);
+      final userTypedName = _nicknameController.text.trim();
+
+      Map<String, dynamic> match = {'individualId': null, 'similarity': 0.0};
+
+      // Step 1: if user typed a name, check that name first
+      if (userTypedName.isNotEmpty) {
+        final namedEmbeddings = await _firebaseService
+            .getEmbeddingsByNickname(userTypedName);
+        if (namedEmbeddings.isNotEmpty) {
+          match = _aiService.findBestMatch(embedding, namedEmbeddings);
+        }
+      }
+
+      // Step 2: if name-guided check failed, fall back to full scan
+      if (match['individualId'] == null ||
+          (match['similarity'] as double) < 0.55) {
+        final knownEmbeddings = await _firebaseService.loadEmbeddings(
+          detection.animalType,
+        );
+        match = _aiService.findBestMatch(embedding, knownEmbeddings);
+      }
 
       _matchedIndividualId = match['individualId'];
       _similarity          = match['similarity'];
