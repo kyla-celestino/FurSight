@@ -16,16 +16,16 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const FurFinderApp());
+  runApp(const FurSightApp());
 }
 
-class FurFinderApp extends StatelessWidget {
-  const FurFinderApp({super.key});
+class FurSightApp extends StatelessWidget {
+  const FurSightApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'FurFinder',
+      title: 'FurSight',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
@@ -382,7 +382,7 @@ class _ProfileTab extends StatelessWidget {
           Icon(Icons.pets, color: Color(0xFF1b5e20), size: 20),
           SizedBox(width: 8),
           Text(
-            'FurFinder',
+            'FurSight',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,

@@ -75,7 +75,7 @@ class HowItWorksScreen extends StatelessWidget {
           const Padding(
             padding: EdgeInsets.fromLTRB(20, 4, 20, 16),
             child: Text(
-              'Follow these steps to contribute\nto the FurFinder community.',
+              'Follow these steps to contribute\nto the FurSight community.',
               style: TextStyle(
                 fontSize: 13,
                 color: Color(0xFF888888),

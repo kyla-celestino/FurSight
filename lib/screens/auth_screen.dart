@@ -68,7 +68,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   Icon(Icons.pets, color: Color(0xFF1b5e20), size: 20),
                   SizedBox(width: 8),
                   Text(
-                    'FurFinder',
+                    'FurSight',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -110,7 +110,7 @@ class _AuthScreenState extends State<AuthScreen> {
               Text(
                 _isLogin
                     ? 'Sign in to continue tracking\nanimals around UPLB campus.'
-                    : 'Join the FurFinder community\nand help animals find their way home.',
+                    : 'Join the FurSight community\nand help animals find their way home.',
                 style: const TextStyle(
                   fontSize: 13,
                   color: Color(0xFF888888),

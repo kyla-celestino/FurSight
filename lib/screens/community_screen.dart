@@ -519,7 +519,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
           Icon(Icons.pets, color: Color(0xFF1b5e20), size: 20),
           SizedBox(width: 8),
           Text(
-            'FurFinder',
+            'FurSight',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,

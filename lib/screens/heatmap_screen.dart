@@ -22,7 +22,9 @@ class HeatmapScreen extends StatefulWidget {
 class _HeatmapScreenState extends State<HeatmapScreen> {
   final _firebaseService = FirebaseService();
   late WebViewController _webController;
+  late Stream<List<AnimalSighting>> _sightingsStream;
   String _filter         = 'all';
+  String _renderedFilter = '';
   bool   _isLoading      = true;
   List<AnimalSighting> _lastSightings = [];
 
@@ -36,6 +38,7 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
   @override
   void initState() {
     super.initState();
+    _sightingsStream = _firebaseService.getSightingsStream();
     if (_isIndividualMode) {
       _lastSightings = widget.individualSightings!;
       _filter = widget.animalType ?? 'all';
@@ -243,7 +246,7 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
                 Icon(Icons.pets, color: Color(0xFF1b5e20), size: 20),
                 SizedBox(width: 8),
                 Text(
-                  'FurFinder',
+                  'FurSight',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -276,10 +279,12 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
                 onChanged: (val) {
                   if (val == null) return;
                   setState(() {
-                    _filter    = val;
-                    _isLoading = true;
-                    _webController.loadHtmlString(
-                        _buildHeatmapHtml(_lastSightings));
+                    _filter          = val;
+                    _isLoading       = true;
+                    _lastSightings   = [];
+                    _sightingsStream = _firebaseService.getSightingsStream(
+                      animalType: val == 'all' ? null : val,
+                    );
                   });
                 },
               ),
@@ -289,14 +294,14 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
       body: _isIndividualMode
         ? _buildMapStack()
         : StreamBuilder<List<AnimalSighting>>(
-            stream: _firebaseService.getSightingsStream(
-              animalType: _filter == 'all' ? null : _filter,
-            ),
+            stream: _sightingsStream,
             builder: (context, snapshot) {
               if (snapshot.hasData) {
                 final sightings = snapshot.data!;
-                if (sightings.length != _lastSightings.length) {
-                  _lastSightings = sightings;
+                if (sightings.length != _lastSightings.length ||
+                    _filter != _renderedFilter) {
+                  _lastSightings   = sightings;
+                  _renderedFilter  = _filter;
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (mounted) {
                       _webController.loadHtmlString(_buildHeatmapHtml(sightings));

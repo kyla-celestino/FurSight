@@ -326,14 +326,14 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // FurFinder header row
+                  // FurSight header row
                   const Row(
                     children: [
                       Icon(Icons.pets,
                           color: Color(0xFF1b5e20), size: 22),
                       SizedBox(width: 8),
                       Text(
-                        'FurFinder',
+                        'FurSight',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w800,
