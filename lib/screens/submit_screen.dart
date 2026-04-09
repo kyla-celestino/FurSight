@@ -38,6 +38,7 @@ class _SubmitScreenState extends State<SubmitScreen> {
   String           _statusMessage = '';
   DetectionResult? _detectionResult;
   String?          _matchedIndividualId;
+  String           _matchedNickname = '';
   double           _similarity    = 0.0;
   bool             _isNewIndividual = false;
 
@@ -63,6 +64,30 @@ class _SubmitScreenState extends State<SubmitScreen> {
         'For best results, please take photos between 8:00 AM and 5:00 PM when lighting is optimal.',
       );
       return;
+    }
+    // blank name warning (fix #4)
+    if (_nicknameController.text.trim().isEmpty) {
+      final proceed = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('No name entered'),
+          content: const Text(
+            'You left the name field blank. If this is a new animal, '
+            'it will be saved with an auto-generated name. Continue?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Go Back'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Continue'),
+            ),
+          ],
+        ),
+      );
+      if (proceed != true) return;
     }
     await _runPipelineInternal();
   }
@@ -118,6 +143,12 @@ class _SubmitScreenState extends State<SubmitScreen> {
       _similarity          = match['similarity'];
       _isNewIndividual     = _matchedIndividualId == null;
 
+      // fetch matched name for success message (fix #1)
+      if (_matchedIndividualId != null) {
+        _matchedNickname = await _firebaseService
+            .getNickname(_matchedIndividualId!);
+      }
+
       setState(() { _statusMessage = 'Getting location...'; });
 
       final position     = await _locationService.getCurrentLocation();
@@ -141,6 +172,7 @@ class _SubmitScreenState extends State<SubmitScreen> {
         imageUrl:        imageUrl,
         nickname:        _nicknameController.text,
         characteristics: _characteristicsController.text,
+        updateEmbedding: _similarity >= 0.70,
       );
 
       final sighting = AnimalSighting(
@@ -165,7 +197,7 @@ class _SubmitScreenState extends State<SubmitScreen> {
         _state         = SubmitState.done;
         _statusMessage = _isNewIndividual
             ? '🐾 New ${detection.animalType} added to the database!'
-            : '✅ Matched with a known ${detection.animalType}!';
+            : '✅ Matched with existing animal: $_matchedNickname';
       });
     } catch (e) {
       setState(() {

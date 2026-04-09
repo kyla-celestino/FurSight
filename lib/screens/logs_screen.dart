@@ -586,6 +586,164 @@ class _SightingDetailModalState extends State<_SightingDetailModal> {
     }
   }
 
+  Future<void> _renameAnimal() async {
+    final controller = TextEditingController(text: _nickname);
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Rename Animal'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(hintText: 'Enter new name'),
+          textCapitalization: TextCapitalization.words,
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (newName != null && newName.isNotEmpty && mounted) {
+      await _firebaseService
+          .renameIndividual(widget.sighting.individualId, newName);
+      setState(() => _nickname = newName);
+    }
+  }
+
+  static const _reportReasons = [
+    'Wrong animal type (cat vs dog)',
+    'Wrong individual (matched wrong animal)',
+    'Same animal, different individual entry (duplicate)',
+    'Animal not clearly visible in photo',
+    'No animal present in the photo',
+    'Animal present but AI could not find it',
+    'Other',
+  ];
+
+  Future<void> _showReportSheet() async {
+    final selected = <String>{};
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 0, 20, 4),
+                child: Text(
+                  'Report Sighting',
+                  style: TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.w700,
+                    color: Color(0xFF1a1a1a),
+                  ),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 0, 20, 12),
+                child: Text(
+                  'Select all reasons that apply. This helps improve the AI.',
+                  style: TextStyle(fontSize: 13, color: Color(0xFF888888)),
+                ),
+              ),
+              const Divider(height: 1),
+              ..._reportReasons.map((reason) => CheckboxListTile(
+                value: selected.contains(reason),
+                onChanged: (val) => setSheetState(() {
+                  if (val == true) selected.add(reason);
+                  else selected.remove(reason);
+                }),
+                title: Text(reason,
+                    style: const TextStyle(
+                        fontSize: 13, color: Color(0xFF1a1a1a))),
+                activeColor: const Color(0xFF2e7d32),
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 20),
+                dense: true,
+              )),
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: selected.isEmpty ? null : () => Navigator.pop(ctx),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFb71c1c),
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: Colors.grey[300],
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(100)),
+                    ),
+                    child: const Text('Submit Report',
+                        style: TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (selected.isEmpty || !mounted) return;
+
+    try {
+      await _firebaseService.saveReport(
+        sightingId:   widget.sighting.id,
+        individualId: widget.sighting.individualId,
+        animalType:   widget.sighting.animalType,
+        reportedBy:   widget.sighting.submittedBy,
+        reasons:      selected.toList(),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Report submitted. Thank you for the feedback!'),
+          backgroundColor: Color(0xFF2e7d32),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to submit report. Please try again.'),
+          backgroundColor: Color(0xFFb71c1c),
+        ),
+      );
+    }
+  }
+
   Future<void> _openIndividualHeatmap() async {
     setState(() => _loadingMap = true);
     final sightings = await _firebaseService
@@ -680,10 +838,25 @@ class _SightingDetailModalState extends State<_SightingDetailModal> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_nickname,
-                    style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.w700,
-                      color: Color(0xFF1a1a1a))),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Text(_nickname,
+                          style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.w700,
+                            color: Color(0xFF1a1a1a))),
+                    ),
+                    IconButton(
+                      onPressed: _renameAnimal,
+                      icon: const Icon(Icons.edit_outlined,
+                          size: 18, color: Color(0xFF888888)),
+                      tooltip: 'Rename',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
@@ -743,6 +916,31 @@ class _SightingDetailModalState extends State<_SightingDetailModal> {
                         borderRadius: BorderRadius.circular(100)),
                     ),
                     onPressed: _loadingMap ? null : _openIndividualHeatmap,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton.icon(
+                    icon: const Icon(Icons.flag_outlined,
+                        size: 16, color: Color(0xFFb71c1c)),
+                    label: const Text(
+                      'Report Incorrect Classification',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFFb71c1c),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    onPressed: _showReportSheet,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(100),
+                        side: const BorderSide(
+                            color: Color(0xFFf48fb1), width: 0.5),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),

@@ -139,43 +139,58 @@ class FirebaseService {
     required String imageUrl,
     String? nickname,
     String? characteristics,
+    bool updateEmbedding = true,
   }) async {
     if (existingId != null) {
-      final docRef = _individuals.doc(existingId);
-      final doc = await docRef.get();
-      if (doc.exists) {
+      String returnId = existingId;
+      await _db.runTransaction((transaction) async {
+        final docRef = _individuals.doc(existingId);
+        final doc = await transaction.get(docRef);
+        if (!doc.exists) return;
+
         final data = doc.data() as Map<String, dynamic>;
         final oldEmbedding = List<double>.from(data['avgEmbedding'] ?? []);
         final count = (data['sightingCount'] ?? 0) as int;
 
-        List<double> updatedEmbedding = oldEmbedding;
-        if (oldEmbedding.length == newEmbedding.length) {
-          updatedEmbedding = List.generate(
+        final updateData = <String, dynamic>{
+          'sightingCount': FieldValue.increment(1),
+          'lastSeen': Timestamp.now(),
+          'latestImageUrl': imageUrl,
+        };
+
+        // only blend embedding if confidence is high enough (fix #5)
+        if (updateEmbedding && oldEmbedding.length == newEmbedding.length) {
+          updateData['avgEmbedding'] = List.generate(
             newEmbedding.length,
             (i) => (oldEmbedding[i] * count + newEmbedding[i]) / (count + 1),
           );
         }
 
-        final updateData = <String, dynamic>{
-          'avgEmbedding': updatedEmbedding,
-          'sightingCount': FieldValue.increment(1),
-          'lastSeen': Timestamp.now(),
-          'latestImageUrl': imageUrl,
-        };
-        if (nickname != null && nickname.trim().isNotEmpty) {
-          updateData['nickname'] = nickname.trim();
-        }
+        // never overwrite existing nickname (fix #1 / Kismet→Mawi issue)
+
+        // deduplicate characteristics before appending (fix #3)
         if (characteristics != null && characteristics.trim().isNotEmpty) {
           final existing = (data['characteristics'] as String? ?? '').trim();
-          final incoming = characteristics.trim();
-          updateData['characteristics'] = existing.isEmpty
-              ? incoming
-              : '$existing, $incoming';
+          final existingList = existing.isEmpty
+              ? <String>[]
+              : existing.split(',').map((e) => e.trim().toLowerCase()).toList();
+          final incomingList = characteristics
+              .trim()
+              .split(',')
+              .map((e) => e.trim())
+              .where((e) =>
+                  e.isNotEmpty && !existingList.contains(e.toLowerCase()))
+              .toList();
+          if (incomingList.isNotEmpty) {
+            updateData['characteristics'] = existing.isEmpty
+                ? incomingList.join(', ')
+                : '$existing, ${incomingList.join(', ')}';
+          }
         }
 
-        await docRef.update(updateData);
-        return existingId;
-      }
+        transaction.update(docRef, updateData);
+      });
+      return returnId;
     }
 
     final autoName = await _generateNickname(animalType, nickname);
@@ -190,6 +205,11 @@ class FirebaseService {
       'characteristics': characteristics?.trim() ?? '',
     });
     return docRef.id;
+  }
+
+  // ── Rename an existing individual (fix #2) ────────────────
+  Future<void> renameIndividual(String id, String newName) async {
+    await _individuals.doc(id).update({'nickname': newName.trim()});
   }
 
   Future<String> getNickname(String individualId) async {
@@ -282,5 +302,25 @@ class FirebaseService {
   Future<bool> seedDataExists() async {
     final snapshot = await _individuals.limit(1).get();
     return snapshot.docs.isNotEmpty;
+  }
+
+  // ── Save a sighting report ────────────────────────────────
+  CollectionReference get _reports => _db.collection('reports');
+
+  Future<void> saveReport({
+    required String sightingId,
+    required String individualId,
+    required String animalType,
+    required String reportedBy,
+    required List<String> reasons,
+  }) async {
+    await _reports.add({
+      'sightingId':   sightingId,
+      'individualId': individualId,
+      'animalType':   animalType,
+      'reportedBy':   reportedBy,
+      'reasons':      reasons,
+      'timestamp':    Timestamp.now(),
+    });
   }
 }
