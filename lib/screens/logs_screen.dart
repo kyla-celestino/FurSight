@@ -744,6 +744,52 @@ class _SightingDetailModalState extends State<_SightingDetailModal> {
     }
   }
 
+  Future<void> _deleteSighting() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Delete Sighting'),
+        content: const Text(
+            'This will permanently delete your sighting and its photo. This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFb71c1c),
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await _firebaseService.deleteSighting(widget.sighting);
+      if (!mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Sighting deleted.'),
+          backgroundColor: Color(0xFF424242),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to delete. Please try again.'),
+          backgroundColor: Color(0xFFb71c1c),
+        ),
+      );
+    }
+  }
+
   Future<void> _openIndividualHeatmap() async {
     setState(() => _loadingMap = true);
     final sightings = await _firebaseService
@@ -777,17 +823,18 @@ class _SightingDetailModalState extends State<_SightingDetailModal> {
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            margin: const EdgeInsets.only(top: 12),
-            width: 40, height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-              borderRadius: BorderRadius.circular(2),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
           if (s.imageUrl.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -944,10 +991,36 @@ class _SightingDetailModalState extends State<_SightingDetailModal> {
                   ),
                 ),
                 const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton.icon(
+                    icon: const Icon(Icons.delete_outline,
+                        size: 16, color: Color(0xFFb71c1c)),
+                    label: const Text(
+                      'Delete Sighting',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFFb71c1c),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    onPressed: _deleteSighting,
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(100),
+                        side: const BorderSide(
+                            color: Color(0xFFffcdd2), width: 0.5),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
               ],
             ),
           ),
         ],
+        ),
       ),
     );
   }

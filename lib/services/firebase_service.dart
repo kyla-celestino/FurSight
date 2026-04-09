@@ -304,6 +304,63 @@ class FirebaseService {
     return snapshot.docs.isNotEmpty;
   }
 
+  // ── Delete a sighting (owner only) ───────────────────────
+  Future<void> deleteSighting(AnimalSighting sighting) async {
+    // 1. Delete the Firestore sighting document
+    await _sightings.doc(sighting.id).delete();
+
+    // 2. Delete the image from Firebase Storage
+    if (sighting.imageUrl.isNotEmpty) {
+      try {
+        await _storage.refFromURL(sighting.imageUrl).delete();
+      } catch (_) {
+        // Image may already be gone — ignore
+      }
+    }
+
+    // 3. Update or delete the individual record
+    if (sighting.individualId.isEmpty) return;
+    final individualRef = _individuals.doc(sighting.individualId);
+    int remainingCount = 0;
+    await _db.runTransaction((transaction) async {
+      final doc = await transaction.get(individualRef);
+      if (!doc.exists) return;
+      final count =
+          ((doc.data() as Map<String, dynamic>)['sightingCount'] ?? 1) as int;
+      if (count <= 1) {
+        transaction.delete(individualRef);
+      } else {
+        remainingCount = count - 1;
+        transaction.update(
+            individualRef, {'sightingCount': FieldValue.increment(-1)});
+      }
+    });
+
+    // 4. If individual still exists and latestImageUrl points to deleted image,
+    //    update it to the next most recent sighting's image
+    if (remainingCount > 0) {
+      final indDoc = await individualRef.get();
+      if (indDoc.exists) {
+        final latestUrl =
+            (indDoc.data() as Map<String, dynamic>)['latestImageUrl'] ?? '';
+        if (latestUrl == sighting.imageUrl) {
+          final remaining = await _sightings
+              .where('individualId', isEqualTo: sighting.individualId)
+              .orderBy('timestamp', descending: true)
+              .limit(1)
+              .get();
+          if (remaining.docs.isNotEmpty) {
+            final d = remaining.docs.first.data() as Map<String, dynamic>;
+            await individualRef.update({
+              'latestImageUrl': d['imageUrl'] ?? '',
+              'lastSeen': d['timestamp'],
+            });
+          }
+        }
+      }
+    }
+  }
+
   // ── Save a sighting report ────────────────────────────────
   CollectionReference get _reports => _db.collection('reports');
 
