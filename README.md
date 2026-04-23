@@ -1,4 +1,4 @@
-# furfinder
+# FurSight
 
 A new Flutter project.
 
